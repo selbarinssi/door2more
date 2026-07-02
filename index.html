@@ -152,7 +152,31 @@
     border-color:var(--ikea-blue);
     box-shadow:0 0 0 3px rgba(0,88,163,0.15);
   }
-  .field select.seller-select{ font-weight:700; }
+  .seller-field{ margin-bottom:10px; }
+  .seller-chip{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border:1.5px solid var(--ikea-blue);
+    border-radius:8px;
+    padding:11px 12px;
+    background:#EAF2FA;
+  }
+  .seller-chip .chip-label{
+    font-size:15px;
+    font-weight:700;
+    color:var(--ikea-blue-dark);
+  }
+  .seller-chip .remove{
+    background:none;
+    border:none;
+    color:var(--ikea-blue-dark);
+    font-size:16px;
+    font-weight:800;
+    cursor:pointer;
+    opacity:0.6;
+  }
+  .seller-chip .remove:hover{ opacity:1; }
   .row2{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -407,25 +431,45 @@
         <h2>Vendeur &amp; Client</h2>
       </div>
 
-      <div class="field">
-        <label for="sellerId1">Agent 1</label>
-        <select id="sellerId1" class="seller-select" required>
-          <option value="" disabled selected>Chargement des agents…</option>
-        </select>
+      <div class="field seller-field">
+        <label for="sellerSearch1">Agent 1</label>
+        <div class="seller-picker" id="sellerPicker1">
+          <div class="search-wrap">
+            <input type="text" id="sellerSearch1" placeholder="Rechercher un agent par ID ou nom…" autocomplete="off">
+          </div>
+          <div class="results" id="sellerResults1"></div>
+        </div>
+        <div class="seller-chip" id="sellerChip1" style="display:none">
+          <span class="chip-label"></span>
+          <button type="button" class="remove" data-slot="1">✕</button>
+        </div>
       </div>
 
-      <div class="row2">
-        <div class="field">
-          <label for="sellerId2">Agent 2 (optionnel)</label>
-          <select id="sellerId2" class="seller-select">
-            <option value="" selected>Aucun</option>
-          </select>
+      <div class="field seller-field">
+        <label for="sellerSearch2">Agent 2</label>
+        <div class="seller-picker" id="sellerPicker2">
+          <div class="search-wrap">
+            <input type="text" id="sellerSearch2" placeholder="Rechercher un agent par ID ou nom…" autocomplete="off">
+          </div>
+          <div class="results" id="sellerResults2"></div>
         </div>
-        <div class="field">
-          <label for="sellerId3">Agent 3 (optionnel)</label>
-          <select id="sellerId3" class="seller-select">
-            <option value="" selected>Aucun</option>
-          </select>
+        <div class="seller-chip" id="sellerChip2" style="display:none">
+          <span class="chip-label"></span>
+          <button type="button" class="remove" data-slot="2">✕</button>
+        </div>
+      </div>
+
+      <div class="field seller-field">
+        <label for="sellerSearch3">Agent 3</label>
+        <div class="seller-picker" id="sellerPicker3">
+          <div class="search-wrap">
+            <input type="text" id="sellerSearch3" placeholder="Rechercher un agent par ID ou nom…" autocomplete="off">
+          </div>
+          <div class="results" id="sellerResults3"></div>
+        </div>
+        <div class="seller-chip" id="sellerChip3" style="display:none">
+          <span class="chip-label"></span>
+          <button type="button" class="remove" data-slot="3">✕</button>
         </div>
       </div>
 
@@ -530,9 +574,18 @@
   const els = {
     banner: document.getElementById('banner'),
     form: document.getElementById('saleForm'),
-    sellerId1: document.getElementById('sellerId1'),
-    sellerId2: document.getElementById('sellerId2'),
-    sellerId3: document.getElementById('sellerId3'),
+    sellerPicker1: document.getElementById('sellerPicker1'),
+    sellerPicker2: document.getElementById('sellerPicker2'),
+    sellerPicker3: document.getElementById('sellerPicker3'),
+    sellerSearch1: document.getElementById('sellerSearch1'),
+    sellerSearch2: document.getElementById('sellerSearch2'),
+    sellerSearch3: document.getElementById('sellerSearch3'),
+    sellerResults1: document.getElementById('sellerResults1'),
+    sellerResults2: document.getElementById('sellerResults2'),
+    sellerResults3: document.getElementById('sellerResults3'),
+    sellerChip1: document.getElementById('sellerChip1'),
+    sellerChip2: document.getElementById('sellerChip2'),
+    sellerChip3: document.getElementById('sellerChip3'),
     paymentMethod: document.getElementById('paymentMethod'),
     serviceName: document.getElementById('serviceName'),
     itemSearch: document.getElementById('itemSearch'),
@@ -547,6 +600,8 @@
   let cartItems = [];      // {itemId, itemName, unitPrice, unitVolume, qty}
   let searchTimer = null;
   let searchSeq = 0;
+  let allSellers = [];     // {id, name}, loaded once from config
+  let selectedSellers = { 1: null, 2: null, 3: null };
 
   function showBanner(message, type){
     els.banner.textContent = message;
@@ -577,10 +632,7 @@
     try{
       const res = await fetch(`${SCRIPT_URL}?action=config`);
       const data = await res.json();
-      const sellerOptions = (data.sellers || []).map(s => ({ value: s.id, label: `${s.id} — ${s.name}` }));
-      fillSelect(els.sellerId1, sellerOptions, 'Sélectionner un agent');
-      fillSelect(els.sellerId2, sellerOptions, 'Aucun', false);
-      fillSelect(els.sellerId3, sellerOptions, 'Aucun', false);
+      allSellers = data.sellers || [];
       fillSelect(
         els.paymentMethod,
         (data.paymentMethods || []).map(p => ({ value: p, label: p })),
@@ -595,6 +647,65 @@
       showBanner("Impossible de charger la configuration. Vérifiez la connexion et réessayez.", 'err');
     }
   }
+
+  // ---- Seller search-to-select (3 stacked slots) ----
+
+  function filterSellers(query){
+    const q = query.trim().toLowerCase();
+    if (q.length < 1) return [];
+    return allSellers.filter(s =>
+      s.id.toLowerCase().includes(q) || (s.name || '').toLowerCase().includes(q)
+    ).slice(0, 8);
+  }
+
+  function renderSellerResults(slot){
+    const resultsEl = els[`sellerResults${slot}`];
+    const query = els[`sellerSearch${slot}`].value;
+    if (!query.trim()){
+      resultsEl.innerHTML = '';
+      return;
+    }
+    const matches = filterSellers(query);
+    if (!matches.length){
+      resultsEl.innerHTML = '<div class="empty-note">Aucun agent trouvé.</div>';
+      return;
+    }
+    resultsEl.innerHTML = '';
+    matches.forEach(seller => {
+      const row = document.createElement('div');
+      row.className = 'result-row';
+      row.innerHTML = `
+        <div class="info">
+          <div class="name">${escapeHtml(seller.name)}</div>
+          <div class="meta">ID ${escapeHtml(seller.id)}</div>
+        </div>
+        <button type="button">Choisir</button>
+      `;
+      row.querySelector('button').addEventListener('click', () => selectSeller(slot, seller));
+      resultsEl.appendChild(row);
+    });
+  }
+
+  function selectSeller(slot, seller){
+    selectedSellers[slot] = seller;
+    els[`sellerSearch${slot}`].value = '';
+    els[`sellerResults${slot}`].innerHTML = '';
+    els[`sellerPicker${slot}`].style.display = 'none';
+    const chip = els[`sellerChip${slot}`];
+    chip.querySelector('.chip-label').textContent = `${seller.id} — ${seller.name}`;
+    chip.style.display = 'flex';
+  }
+
+  function clearSeller(slot){
+    selectedSellers[slot] = null;
+    els[`sellerChip${slot}`].style.display = 'none';
+    els[`sellerPicker${slot}`].style.display = 'block';
+  }
+
+  [1, 2, 3].forEach(slot => {
+    els[`sellerSearch${slot}`].addEventListener('input', () => renderSellerResults(slot));
+    els[`sellerChip${slot}`].querySelector('.remove').addEventListener('click', () => clearSeller(slot));
+  });
 
   function debounceSearch(){
     clearTimeout(searchTimer);
@@ -731,6 +842,7 @@
     renderCart();
     els.searchResults.innerHTML = '';
     els.itemSearch.value = '';
+    [1, 2, 3].forEach(slot => clearSeller(slot));
   }
 
   async function handleSubmit(e){
@@ -746,7 +858,13 @@
       return;
     }
 
-    const sellerIds = [els.sellerId1.value, els.sellerId2.value, els.sellerId3.value]
+    if (!selectedSellers[1]){
+      showBanner("Sélectionnez au moins l'Agent 1.", 'err');
+      return;
+    }
+
+    const sellerIds = [1, 2, 3]
+      .map(slot => selectedSellers[slot] ? selectedSellers[slot].id : '')
       .filter(v => v !== '');
     if (new Set(sellerIds).size !== sellerIds.length){
       showBanner("Le même agent est sélectionné plusieurs fois.", 'err');
