@@ -14,7 +14,7 @@
  */
 
 // Must match SHARED_TOKEN in index.html — change this to your own value.
-var SHARED_TOKEN = 'CHANGE_ME_SECRET_TOKEN';
+var SHARED_TOKEN = 'RINCIGROUP';
 
 var SHEET_CONFIG = 'Config';
 var SHEET_CATALOG = 'Catalog';
