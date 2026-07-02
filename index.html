@@ -2,8 +2,13 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Validation des ventes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0058A3">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Door2More">
+<title>Door2More — Validation des ventes</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700;800&family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
@@ -32,8 +37,9 @@
     color:var(--ink);
     font-family:'Noto Sans','Noto Sans Arabic',Verdana,Arial,sans-serif;
     -webkit-font-smoothing:antialiased;
-    padding-bottom:64px;
+    padding-bottom:104px;
   }
+  button{ font-family:inherit; }
 
   header.topbar{
     background:var(--ikea-blue);
@@ -41,7 +47,7 @@
     padding:20px 20px 24px;
   }
   header.topbar .inner{
-    max-width:720px;
+    max-width:480px;
     margin:0 auto;
   }
   header.topbar .eyebrow{
@@ -69,14 +75,14 @@
   }
 
   main.container{
-    max-width:720px;
+    max-width:480px;
     margin:0 auto;
     padding:18px 16px 0;
   }
 
   #banner{
     display:none;
-    max-width:720px;
+    max-width:480px;
     margin:16px auto 0;
     padding:12px 16px;
     border-radius:var(--radius);
@@ -133,8 +139,8 @@
   }
   .field input, .field select{
     width:100%;
-    padding:11px 12px;
-    font-size:15px;
+    padding:12px 12px;
+    font-size:16px;
     font-family:inherit;
     border:1.5px solid var(--line);
     border-radius:8px;
@@ -146,7 +152,7 @@
     border-color:var(--ikea-blue);
     box-shadow:0 0 0 3px rgba(0,88,163,0.15);
   }
-  .field select#sellerId{ font-weight:700; }
+  .field select.seller-select{ font-weight:700; }
   .row2{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -338,6 +344,19 @@
   .totals .value{ font-size:22px; font-weight:800; color:var(--ikea-blue-dark); font-variant-numeric:tabular-nums; }
   .totals .sub{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
 
+  .bottom-bar{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    background:#fff;
+    border-top:1px solid var(--line);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+    box-shadow:0 -2px 14px rgba(0,0,0,0.08);
+    z-index:50;
+  }
+  .bottom-bar .inner{
+    max-width:480px;
+    margin:0 auto;
+  }
   .submit-btn{
     width:100%;
     background:var(--ikea-yellow);
@@ -345,6 +364,7 @@
     border:none;
     border-radius:10px;
     padding:16px;
+    font-family:'Noto Sans','Noto Sans Arabic',Verdana,Arial,sans-serif;
     font-size:16px;
     font-weight:800;
     text-transform:uppercase;
@@ -356,7 +376,7 @@
   .submit-btn:disabled{ opacity:0.5; cursor:not-allowed; }
 
   footer.foot{
-    max-width:720px;
+    max-width:480px;
     margin:20px auto 0;
     padding:0 16px;
     font-size:11.5px;
@@ -369,8 +389,8 @@
 
 <header class="topbar">
   <div class="inner">
-    <span class="eyebrow">Outil interne</span>
-    <h1>Validation des ventes</h1>
+    <span class="eyebrow">Validation des ventes</span>
+    <h1>Door2More</h1>
     <p>Renseignez les informations client, le mode de paiement, le service et les articles.</p>
   </div>
 </header>
@@ -388,10 +408,25 @@
       </div>
 
       <div class="field">
-        <label for="sellerId">Agent</label>
-        <select id="sellerId" required>
+        <label for="sellerId1">Agent 1</label>
+        <select id="sellerId1" class="seller-select" required>
           <option value="" disabled selected>Chargement des agents…</option>
         </select>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="sellerId2">Agent 2 (optionnel)</label>
+          <select id="sellerId2" class="seller-select">
+            <option value="" selected>Aucun</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="sellerId3">Agent 3 (optionnel)</label>
+          <select id="sellerId3" class="seller-select">
+            <option value="" selected>Aucun</option>
+          </select>
+        </div>
       </div>
 
       <div class="field">
@@ -473,14 +508,16 @@
           <div class="sub" id="totalVolume">0,00 m³</div>
         </div>
       </div>
-
-      <div style="margin-top:18px">
-        <button type="submit" class="submit-btn" id="submitBtn">Valider la vente</button>
-      </div>
     </section>
 
   </form>
 </main>
+
+<div class="bottom-bar">
+  <div class="inner">
+    <button type="submit" form="saleForm" class="submit-btn" id="submitBtn">Valider la vente</button>
+  </div>
+</div>
 
 <footer class="foot">Les données sont enregistrées automatiquement avec la date et l'heure de validation.</footer>
 
@@ -493,7 +530,9 @@
   const els = {
     banner: document.getElementById('banner'),
     form: document.getElementById('saleForm'),
-    sellerId: document.getElementById('sellerId'),
+    sellerId1: document.getElementById('sellerId1'),
+    sellerId2: document.getElementById('sellerId2'),
+    sellerId3: document.getElementById('sellerId3'),
     paymentMethod: document.getElementById('paymentMethod'),
     serviceName: document.getElementById('serviceName'),
     itemSearch: document.getElementById('itemSearch'),
@@ -507,6 +546,7 @@
 
   let cartItems = [];      // {itemId, itemName, unitPrice, unitVolume, qty}
   let searchTimer = null;
+  let searchSeq = 0;
 
   function showBanner(message, type){
     els.banner.textContent = message;
@@ -517,11 +557,11 @@
     els.banner.className = '';
   }
 
-  function fillSelect(select, options, placeholder){
+  function fillSelect(select, options, placeholder, placeholderDisabled = true){
     select.innerHTML = '';
     const ph = document.createElement('option');
     ph.value = '';
-    ph.disabled = true;
+    ph.disabled = placeholderDisabled;
     ph.selected = true;
     ph.textContent = placeholder;
     select.appendChild(ph);
@@ -537,11 +577,10 @@
     try{
       const res = await fetch(`${SCRIPT_URL}?action=config`);
       const data = await res.json();
-      fillSelect(
-        els.sellerId,
-        (data.sellers || []).map(s => ({ value: s.id, label: `${s.id} — ${s.name}` })),
-        'Sélectionner un agent'
-      );
+      const sellerOptions = (data.sellers || []).map(s => ({ value: s.id, label: `${s.id} — ${s.name}` }));
+      fillSelect(els.sellerId1, sellerOptions, 'Sélectionner un agent');
+      fillSelect(els.sellerId2, sellerOptions, 'Aucun', false);
+      fillSelect(els.sellerId3, sellerOptions, 'Aucun', false);
       fillSelect(
         els.paymentMethod,
         (data.paymentMethods || []).map(p => ({ value: p, label: p })),
@@ -564,16 +603,19 @@
       els.searchResults.innerHTML = '';
       return;
     }
-    searchTimer = setTimeout(() => runSearch(q), 350);
+    searchTimer = setTimeout(() => runSearch(q), 180);
   }
 
   async function runSearch(q){
+    const seq = ++searchSeq;
     els.searchResults.innerHTML = '<div class="empty-note">Recherche…</div>';
     try{
       const res = await fetch(`${SCRIPT_URL}?action=search&q=${encodeURIComponent(q)}`);
       const data = await res.json();
+      if (seq !== searchSeq) return; // a newer search has already started, ignore this one
       renderResults(data.items || []);
     }catch(err){
+      if (seq !== searchSeq) return;
       els.searchResults.innerHTML = '<div class="empty-note">Recherche indisponible pour le moment.</div>';
     }
   }
@@ -704,9 +746,16 @@
       return;
     }
 
+    const sellerIds = [els.sellerId1.value, els.sellerId2.value, els.sellerId3.value]
+      .filter(v => v !== '');
+    if (new Set(sellerIds).size !== sellerIds.length){
+      showBanner("Le même agent est sélectionné plusieurs fois.", 'err');
+      return;
+    }
+
     const payload = {
       token: SHARED_TOKEN,
-      sellerId: els.sellerId.value,
+      sellerIds: sellerIds,
       customerName: document.getElementById('customerName').value.trim(),
       customerPhone: document.getElementById('customerPhone').value.trim(),
       customerAddress: document.getElementById('customerAddress').value.trim(),
