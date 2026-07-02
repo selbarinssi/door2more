@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Validation des ventes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700;800&family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ikea-blue:#0058A3;
+    --ikea-blue-dark:#00417A;
+    --ikea-yellow:#FFDB00;
+    --bg:#F5F5F3;
+    --card:#FFFFFF;
+    --ink:#111111;
+    --ink-soft:#5A5A5A;
+    --line:#E2E2E0;
+    --ok:#1E7A34;
+    --ok-bg:#EAF6EC;
+    --err:#B3261E;
+    --err-bg:#FCEAE9;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(0,0,0,0.06), 0 4px 14px rgba(0,0,0,0.05);
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Noto Sans','Noto Sans Arabic',Verdana,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:64px;
+  }
+
+  header.topbar{
+    background:var(--ikea-blue);
+    color:#fff;
+    padding:20px 20px 24px;
+  }
+  header.topbar .inner{
+    max-width:720px;
+    margin:0 auto;
+  }
+  header.topbar .eyebrow{
+    display:inline-block;
+    background:var(--ikea-yellow);
+    color:var(--ikea-blue-dark);
+    font-weight:800;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:3px 10px;
+    border-radius:4px;
+    margin-bottom:10px;
+  }
+  header.topbar h1{
+    margin:0;
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:-0.01em;
+  }
+  header.topbar p{
+    margin:6px 0 0;
+    font-size:13.5px;
+    color:#D8E7F5;
+  }
+
+  main.container{
+    max-width:720px;
+    margin:0 auto;
+    padding:18px 16px 0;
+  }
+
+  #banner{
+    display:none;
+    max-width:720px;
+    margin:16px auto 0;
+    padding:12px 16px;
+    border-radius:var(--radius);
+    font-size:14px;
+    font-weight:600;
+  }
+  #banner.show{ display:block; }
+  #banner.ok{ background:var(--ok-bg); color:var(--ok); border:1px solid #BFE3C6; }
+  #banner.err{ background:var(--err-bg); color:var(--err); border:1px solid #F2C6C3; }
+
+  .step{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    margin-bottom:16px;
+    padding:18px 18px 20px;
+    border:1px solid var(--line);
+  }
+  .step-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .step-num{
+    flex:none;
+    width:26px; height:26px;
+    border-radius:50%;
+    background:var(--ikea-blue);
+    color:#fff;
+    font-weight:800;
+    font-size:13px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .step-head h2{
+    margin:0;
+    font-size:15px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    color:var(--ikea-blue-dark);
+  }
+
+  .field{ margin-bottom:14px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{
+    display:block;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+  }
+  .field input, .field select{
+    width:100%;
+    padding:11px 12px;
+    font-size:15px;
+    font-family:inherit;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .field input:focus, .field select:focus{
+    outline:none;
+    border-color:var(--ikea-blue);
+    box-shadow:0 0 0 3px rgba(0,88,163,0.15);
+  }
+  .field select#sellerId{ font-weight:700; }
+  .row2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  @media(max-width:480px){ .row2{ grid-template-columns:1fr; } }
+
+  /* --- item search --- */
+  .search-wrap{ position:relative; margin-bottom:12px; }
+  .search-wrap input{
+    padding-left:38px;
+  }
+  .search-wrap::before{
+    content:"";
+    position:absolute;
+    left:12px; top:50%;
+    width:16px; height:16px;
+    transform:translateY(-50%);
+    border:2px solid var(--ink-soft);
+    border-radius:50%;
+    box-sizing:border-box;
+  }
+  .search-wrap::after{
+    content:"";
+    position:absolute;
+    left:24px; top:23px;
+    width:7px; height:2px;
+    background:var(--ink-soft);
+    transform:rotate(45deg);
+  }
+  .search-hint{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:-6px 0 12px;
+  }
+
+  .results{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:6px;
+  }
+  .result-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:9px 10px;
+  }
+  .result-row .info{ flex:1; min-width:0; }
+  .result-row .info .name{ font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .result-row .info .meta{ font-size:12px; color:var(--ink-soft); }
+  .result-row button{
+    flex:none;
+    background:var(--ikea-blue);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    padding:8px 14px;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .result-row button:active{ background:var(--ikea-blue-dark); }
+  .empty-note{
+    font-size:13px;
+    color:var(--ink-soft);
+    padding:8px 2px;
+  }
+
+  /* --- cart: IKEA-style price tags --- */
+  .cart-title{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+    margin:18px 0 10px;
+  }
+  .cart{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .tag{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:var(--ikea-yellow);
+    border-radius:4px 10px 10px 4px;
+    padding:10px 12px 10px 16px;
+  }
+  .tag::before{
+    content:"";
+    position:absolute;
+    left:-6px; top:50%;
+    width:12px; height:12px;
+    background:var(--ikea-yellow);
+    border-radius:50%;
+    transform:translateY(-50%);
+    box-shadow:inset 0 0 0 2px var(--bg);
+  }
+  .tag .tag-hole{
+    flex:none;
+    width:8px; height:8px;
+    border-radius:50%;
+    background:var(--bg);
+  }
+  .tag .tag-info{ flex:1; min-width:0; }
+  .tag .tag-info .name{
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--ikea-blue-dark);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .tag .tag-info .id{
+    font-size:11px;
+    color:var(--ikea-blue-dark);
+    opacity:0.7;
+  }
+  .tag .qty-ctrl{
+    flex:none;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:rgba(255,255,255,0.55);
+    border-radius:6px;
+    padding:2px;
+  }
+  .tag .qty-ctrl button{
+    width:26px; height:26px;
+    border:none;
+    border-radius:5px;
+    background:#fff;
+    font-weight:800;
+    font-size:15px;
+    cursor:pointer;
+    color:var(--ikea-blue-dark);
+  }
+  .tag .qty-ctrl span{
+    min-width:20px;
+    text-align:center;
+    font-weight:800;
+    font-size:14px;
+    color:var(--ikea-blue-dark);
+  }
+  .tag .price{
+    flex:none;
+    font-weight:800;
+    font-size:15px;
+    color:var(--ikea-blue-dark);
+    font-variant-numeric:tabular-nums;
+    min-width:64px;
+    text-align:right;
+  }
+  .tag .remove{
+    flex:none;
+    background:none;
+    border:none;
+    color:var(--ikea-blue-dark);
+    font-size:18px;
+    font-weight:800;
+    cursor:pointer;
+    opacity:0.6;
+    padding:0 2px;
+  }
+  .tag .remove:hover{ opacity:1; }
+
+  .cart-empty{
+    font-size:13px;
+    color:var(--ink-soft);
+    border:1.5px dashed var(--line);
+    border-radius:8px;
+    padding:16px;
+    text-align:center;
+  }
+
+  .totals{
+    margin-top:16px;
+    border-top:1px solid var(--line);
+    padding-top:14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+  }
+  .totals .label{ font-size:13px; color:var(--ink-soft); font-weight:600; }
+  .totals .value{ font-size:22px; font-weight:800; color:var(--ikea-blue-dark); font-variant-numeric:tabular-nums; }
+  .totals .sub{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+
+  .submit-btn{
+    width:100%;
+    background:var(--ikea-yellow);
+    color:var(--ikea-blue-dark);
+    border:none;
+    border-radius:10px;
+    padding:16px;
+    font-size:16px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+  }
+  .submit-btn:active{ transform:translateY(1px); }
+  .submit-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  footer.foot{
+    max-width:720px;
+    margin:20px auto 0;
+    padding:0 16px;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="inner">
+    <span class="eyebrow">Outil interne</span>
+    <h1>Validation des ventes</h1>
+    <p>Renseignez les informations client, le mode de paiement, le service et les articles.</p>
+  </div>
+</header>
+
+<div id="banner"></div>
+
+<main class="container">
+  <form id="saleForm" novalidate>
+
+    <!-- STEP 1: Seller + Customer -->
+    <section class="step">
+      <div class="step-head">
+        <div class="step-num">1</div>
+        <h2>Vendeur &amp; Client</h2>
+      </div>
+
+      <div class="field">
+        <label for="sellerId">Agent</label>
+        <select id="sellerId" required>
+          <option value="" disabled selected>Chargement des agents…</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="customerName">Nom du client</label>
+        <input type="text" id="customerName" placeholder="Ex: Youssef El Amrani" required>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="customerPhone">Téléphone</label>
+          <input type="tel" id="customerPhone" placeholder="06 00 00 00 00" required>
+        </div>
+        <div class="field">
+          <label for="orderNumber">N° de commande</label>
+          <input type="text" id="orderNumber" placeholder="Ex: CMD-10234" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="customerAddress">Adresse</label>
+        <input type="text" id="customerAddress" placeholder="Adresse de livraison" required>
+      </div>
+    </section>
+
+    <!-- STEP 2: Payment + Service -->
+    <section class="step">
+      <div class="step-head">
+        <div class="step-num">2</div>
+        <h2>Paiement &amp; Service</h2>
+      </div>
+
+      <div class="field">
+        <label for="paymentMethod">Méthode de paiement</label>
+        <select id="paymentMethod" required>
+          <option value="" disabled selected>Chargement…</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="serviceName">Service</label>
+        <select id="serviceName" required>
+          <option value="" disabled selected>Chargement…</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- STEP 3: Items -->
+    <section class="step">
+      <div class="step-head">
+        <div class="step-num">3</div>
+        <h2>Articles</h2>
+      </div>
+
+      <div class="search-wrap">
+        <input type="text" id="itemSearch" placeholder="Rechercher par référence ou nom d'article…" autocomplete="off">
+      </div>
+      <div class="search-hint">Tapez au moins 2 caractères. Les 25 premiers résultats s'affichent.</div>
+
+      <div class="results" id="searchResults"></div>
+
+      <div class="cart-title">Panier</div>
+      <div class="cart" id="cart"></div>
+    </section>
+
+    <!-- STEP 4: Review + Submit -->
+    <section class="step">
+      <div class="step-head">
+        <div class="step-num">4</div>
+        <h2>Validation</h2>
+      </div>
+
+      <div class="totals">
+        <div>
+          <div class="label">Total articles</div>
+          <div class="sub" id="totalCount">0 article(s)</div>
+        </div>
+        <div style="text-align:right">
+          <div class="value" id="totalAmount">0,00 MAD</div>
+          <div class="sub" id="totalVolume">0,00 m³</div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px">
+        <button type="submit" class="submit-btn" id="submitBtn">Valider la vente</button>
+      </div>
+    </section>
+
+  </form>
+</main>
+
+<footer class="foot">Les données sont enregistrées automatiquement avec la date et l'heure de validation.</footer>
+
+<script>
+  // ====== CONFIGURATION — replace these two values before publishing ======
+  const SCRIPT_URL   = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+  const SHARED_TOKEN = "CHANGE_ME_SECRET_TOKEN";
+  // ==========================================================================
+
+  const els = {
+    banner: document.getElementById('banner'),
+    form: document.getElementById('saleForm'),
+    sellerId: document.getElementById('sellerId'),
+    paymentMethod: document.getElementById('paymentMethod'),
+    serviceName: document.getElementById('serviceName'),
+    itemSearch: document.getElementById('itemSearch'),
+    searchResults: document.getElementById('searchResults'),
+    cart: document.getElementById('cart'),
+    totalCount: document.getElementById('totalCount'),
+    totalAmount: document.getElementById('totalAmount'),
+    totalVolume: document.getElementById('totalVolume'),
+    submitBtn: document.getElementById('submitBtn'),
+  };
+
+  let cartItems = [];      // {itemId, itemName, unitPrice, unitVolume, qty}
+  let searchTimer = null;
+
+  function showBanner(message, type){
+    els.banner.textContent = message;
+    els.banner.className = 'show ' + type;
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  function hideBanner(){
+    els.banner.className = '';
+  }
+
+  function fillSelect(select, options, placeholder){
+    select.innerHTML = '';
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.disabled = true;
+    ph.selected = true;
+    ph.textContent = placeholder;
+    select.appendChild(ph);
+    options.forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt.value;
+      o.textContent = opt.label;
+      select.appendChild(o);
+    });
+  }
+
+  async function loadConfig(){
+    try{
+      const res = await fetch(`${SCRIPT_URL}?action=config`);
+      const data = await res.json();
+      fillSelect(
+        els.sellerId,
+        (data.sellers || []).map(s => ({ value: s.id, label: `${s.id} — ${s.name}` })),
+        'Sélectionner un agent'
+      );
+      fillSelect(
+        els.paymentMethod,
+        (data.paymentMethods || []).map(p => ({ value: p, label: p })),
+        'Sélectionner un mode de paiement'
+      );
+      fillSelect(
+        els.serviceName,
+        (data.serviceNames || []).map(s => ({ value: s, label: s })),
+        'Sélectionner un service'
+      );
+    }catch(err){
+      showBanner("Impossible de charger la configuration. Vérifiez la connexion et réessayez.", 'err');
+    }
+  }
+
+  function debounceSearch(){
+    clearTimeout(searchTimer);
+    const q = els.itemSearch.value.trim();
+    if (q.length < 2){
+      els.searchResults.innerHTML = '';
+      return;
+    }
+    searchTimer = setTimeout(() => runSearch(q), 350);
+  }
+
+  async function runSearch(q){
+    els.searchResults.innerHTML = '<div class="empty-note">Recherche…</div>';
+    try{
+      const res = await fetch(`${SCRIPT_URL}?action=search&q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      renderResults(data.items || []);
+    }catch(err){
+      els.searchResults.innerHTML = '<div class="empty-note">Recherche indisponible pour le moment.</div>';
+    }
+  }
+
+  function formatMAD(n){
+    return n.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' MAD';
+  }
+  function formatM3(n){
+    return n.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' m³';
+  }
+
+  function renderResults(items){
+    if (!items.length){
+      els.searchResults.innerHTML = '<div class="empty-note">Aucun article trouvé.</div>';
+      return;
+    }
+    els.searchResults.innerHTML = '';
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'result-row';
+      row.innerHTML = `
+        <div class="info">
+          <div class="name">${escapeHtml(item.name)}</div>
+          <div class="meta">Réf. ${escapeHtml(item.id)} · ${formatMAD(item.price)}</div>
+        </div>
+        <button type="button">Ajouter</button>
+      `;
+      row.querySelector('button').addEventListener('click', () => addToCart(item));
+      els.searchResults.appendChild(row);
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  }
+
+  function addToCart(item){
+    const existing = cartItems.find(c => c.itemId === item.id);
+    if (existing){
+      existing.qty += 1;
+    }else{
+      cartItems.push({
+        itemId: item.id,
+        itemName: item.name,
+        unitPrice: item.price,
+        unitVolume: item.volume,
+        qty: 1
+      });
+    }
+    renderCart();
+  }
+
+  function changeQty(itemId, delta){
+    const item = cartItems.find(c => c.itemId === itemId);
+    if (!item) return;
+    item.qty += delta;
+    if (item.qty <= 0){
+      cartItems = cartItems.filter(c => c.itemId !== itemId);
+    }
+    renderCart();
+  }
+
+  function removeFromCart(itemId){
+    cartItems = cartItems.filter(c => c.itemId !== itemId);
+    renderCart();
+  }
+
+  function renderCart(){
+    if (!cartItems.length){
+      els.cart.innerHTML = '<div class="cart-empty">Aucun article ajouté pour le moment.</div>';
+    }else{
+      els.cart.innerHTML = '';
+      cartItems.forEach(item => {
+        const tag = document.createElement('div');
+        tag.className = 'tag';
+        tag.innerHTML = `
+          <div class="tag-hole"></div>
+          <div class="tag-info">
+            <div class="name">${escapeHtml(item.itemName)}</div>
+            <div class="id">Réf. ${escapeHtml(item.itemId)}</div>
+          </div>
+          <div class="qty-ctrl">
+            <button type="button" data-action="dec">−</button>
+            <span>${item.qty}</span>
+            <button type="button" data-action="inc">+</button>
+          </div>
+          <div class="price">${formatMAD(item.unitPrice * item.qty)}</div>
+          <button type="button" class="remove" title="Retirer">✕</button>
+        `;
+        tag.querySelector('[data-action="dec"]').addEventListener('click', () => changeQty(item.itemId, -1));
+        tag.querySelector('[data-action="inc"]').addEventListener('click', () => changeQty(item.itemId, 1));
+        tag.querySelector('.remove').addEventListener('click', () => removeFromCart(item.itemId));
+        els.cart.appendChild(tag);
+      });
+    }
+    updateTotals();
+  }
+
+  function updateTotals(){
+    const totalCount = cartItems.reduce((sum, i) => sum + i.qty, 0);
+    const totalAmount = cartItems.reduce((sum, i) => sum + i.qty * i.unitPrice, 0);
+    const totalVolume = cartItems.reduce((sum, i) => sum + i.qty * i.unitVolume, 0);
+    els.totalCount.textContent = `${totalCount} article(s)`;
+    els.totalAmount.textContent = formatMAD(totalAmount);
+    els.totalVolume.textContent = formatM3(totalVolume);
+  }
+
+  function resetForm(){
+    els.form.reset();
+    cartItems = [];
+    renderCart();
+    els.searchResults.innerHTML = '';
+    els.itemSearch.value = '';
+  }
+
+  async function handleSubmit(e){
+    e.preventDefault();
+    hideBanner();
+
+    if (!els.form.checkValidity()){
+      els.form.reportValidity();
+      return;
+    }
+    if (!cartItems.length){
+      showBanner("Ajoutez au moins un article avant de valider.", 'err');
+      return;
+    }
+
+    const payload = {
+      token: SHARED_TOKEN,
+      sellerId: els.sellerId.value,
+      customerName: document.getElementById('customerName').value.trim(),
+      customerPhone: document.getElementById('customerPhone').value.trim(),
+      customerAddress: document.getElementById('customerAddress').value.trim(),
+      orderNumber: document.getElementById('orderNumber').value.trim(),
+      paymentMethod: els.paymentMethod.value,
+      serviceName: els.serviceName.value,
+      items: cartItems.map(i => ({
+        itemId: i.itemId,
+        itemName: i.itemName,
+        qty: i.qty,
+        unitPrice: i.unitPrice,
+        unitVolume: i.unitVolume
+      }))
+    };
+
+    els.submitBtn.disabled = true;
+    els.submitBtn.textContent = 'Enregistrement…';
+
+    try{
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success){
+        showBanner(`Vente enregistrée avec succès (Réf. ${data.saleId}).`, 'ok');
+        resetForm();
+      }else{
+        showBanner(data.error || "Une erreur est survenue lors de l'enregistrement.", 'err');
+      }
+    }catch(err){
+      showBanner("Connexion impossible. Vérifiez votre réseau et réessayez.", 'err');
+    }finally{
+      els.submitBtn.disabled = false;
+      els.submitBtn.textContent = 'Valider la vente';
+    }
+  }
+
+  els.itemSearch.addEventListener('input', debounceSearch);
+  els.form.addEventListener('submit', handleSubmit);
+
+  renderCart();
+  loadConfig();
+</script>
+
+</body>
+</html>
