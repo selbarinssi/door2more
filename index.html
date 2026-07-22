@@ -894,8 +894,8 @@
     return 0;
   }
 
-  function updateServiceFeeDisplay(){
-    const fee = computeServiceFee();
+  function updateServiceFeeDisplay(fee){
+    if (fee === undefined) fee = computeServiceFee();
     if (fee === null){
       els.serviceFeeRow.classList.remove('show');
       return;
@@ -1089,12 +1089,13 @@
 
   function updateTotals(){
     const totalCount = cartItems.reduce((sum, i) => sum + i.qty, 0);
-    const totalAmount = cartItems.reduce((sum, i) => sum + i.qty * i.unitPrice, 0);
+    const itemsAmount = cartItems.reduce((sum, i) => sum + i.qty * i.unitPrice, 0);
     const totalVolume = cartItems.reduce((sum, i) => sum + i.qty * i.unitVolume, 0);
+    const fee = computeServiceFee();
     els.totalCount.textContent = `${totalCount} article(s)`;
-    els.totalAmount.textContent = formatMAD(totalAmount);
+    els.totalAmount.textContent = formatMAD(itemsAmount + (fee || 0));
     els.totalVolume.textContent = formatM3(totalVolume);
-    updateServiceFeeDisplay();
+    updateServiceFeeDisplay(fee);
   }
 
   function resetForm(){
@@ -1237,7 +1238,7 @@
 
     els.recapFee.textContent = formatMAD(r.serviceFee);
     els.recapVolume.textContent = formatM3(r.totalVolume);
-    els.recapTotal.textContent = formatMAD(r.totalAmount);
+    els.recapTotal.textContent = formatMAD(r.totalAmount + r.serviceFee);
 
     els.recapModal.classList.add('show');
   }
