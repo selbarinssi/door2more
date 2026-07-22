@@ -399,6 +399,140 @@
   .submit-btn:active{ transform:translateY(1px); }
   .submit-btn:disabled{ opacity:0.5; cursor:not-allowed; }
 
+  /* --- service fee row (shown just above the total) --- */
+  .fee-row{
+    display:none;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px dashed var(--line);
+    font-size:13px;
+  }
+  .fee-row.show{ display:flex; }
+  .fee-row .label{ color:var(--ink-soft); font-weight:600; }
+  .fee-row .label span{ color:var(--ikea-blue-dark); font-weight:700; }
+  .fee-row .fee-value{ font-weight:800; color:var(--ikea-blue-dark); font-variant-numeric:tabular-nums; }
+
+  /* --- submit overlay: blocks re-taps while a sale is being saved --- */
+  .submit-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(245,245,243,0.9);
+    z-index:200;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+  }
+  .submit-overlay.show{ display:flex; }
+  .ring-spinner{
+    width:46px; height:46px;
+    border:4px solid var(--line);
+    border-top-color:var(--ikea-blue);
+    border-radius:50%;
+    animation:ring-spin 0.8s linear infinite;
+  }
+  @keyframes ring-spin{ to{ transform:rotate(360deg); } }
+  .submit-overlay p{
+    margin:0;
+    font-size:14px;
+    font-weight:700;
+    color:var(--ikea-blue-dark);
+  }
+
+  /* --- recap modal (shown after a successful submit) --- */
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(17,17,17,0.5);
+    z-index:210;
+    align-items:flex-end;
+    justify-content:center;
+    padding:0;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-card{
+    background:#fff;
+    width:100%;
+    max-width:480px;
+    max-height:88vh;
+    overflow-y:auto;
+    border-radius:16px 16px 0 0;
+    padding:24px 20px calc(20px + env(safe-area-inset-bottom));
+    box-shadow:0 -4px 24px rgba(0,0,0,0.2);
+  }
+  .modal-icon{
+    width:52px; height:52px;
+    border-radius:50%;
+    background:var(--ok-bg);
+    color:var(--ok);
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px;
+    font-weight:800;
+    margin:0 auto 14px;
+  }
+  .modal-card h2{
+    margin:0 0 4px;
+    font-size:17px;
+    font-weight:800;
+    text-align:center;
+    color:var(--ink);
+  }
+  .modal-ref{
+    text-align:center;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 18px;
+  }
+  .modal-ref strong{ color:var(--ikea-blue-dark); }
+  .recap-section{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:4px 12px;
+    margin-bottom:14px;
+  }
+  .recap-row{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:9px 0;
+    border-bottom:1px solid var(--line);
+    font-size:13.5px;
+  }
+  .recap-row:last-child{ border-bottom:none; }
+  .recap-row span:first-child{ color:var(--ink-soft); font-weight:600; flex:none; }
+  .recap-row span:last-child{ text-align:right; font-weight:700; color:var(--ink); }
+  .recap-items-title{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+    margin:16px 0 8px;
+  }
+  .recap-item-row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    font-size:13px;
+    padding:6px 0;
+  }
+  .recap-item-row .name{ flex:1; min-width:0; }
+  .recap-totals{
+    border-top:1.5px solid var(--line);
+    margin-top:10px;
+    padding-top:6px;
+  }
+  .recap-totals .recap-row.total span{
+    font-size:17px;
+    font-weight:800;
+    color:var(--ikea-blue-dark);
+  }
+  #recapCloseBtn{ margin-top:18px; }
+
   footer.foot{
     max-width:480px;
     margin:20px auto 0;
@@ -430,6 +564,7 @@
         <div class="step-num">1</div>
         <h2>Vendeur &amp; Client</h2>
       </div>
+      <div class="search-hint" style="margin:-10px 0 14px;">Minimum 2 agents requis pour valider une vente.</div>
 
       <div class="field seller-field">
         <label for="sellerSearch1">Agent 1</label>
@@ -490,6 +625,13 @@
       </div>
 
       <div class="field">
+        <label for="customerCity">Ville Client</label>
+        <select id="customerCity" required>
+          <option value="" disabled selected>Chargement…</option>
+        </select>
+      </div>
+
+      <div class="field">
         <label for="customerAddress">Adresse Client</label>
         <input type="text" id="customerAddress" placeholder="Adresse de livraison" required>
       </div>
@@ -542,6 +684,11 @@
         <h2>Validation</h2>
       </div>
 
+      <div class="fee-row" id="serviceFeeRow">
+        <div class="label">Frais de service <span id="serviceFeeServiceLabel"></span></div>
+        <div class="fee-value" id="serviceFeeValue">0,00 MAD</div>
+      </div>
+
       <div class="totals">
         <div>
           <div class="label">Total articles</div>
@@ -564,6 +711,41 @@
 </div>
 
 <footer class="foot">Les données sont enregistrées automatiquement avec la date et l'heure de validation.</footer>
+
+<div class="submit-overlay" id="submitOverlay">
+  <div class="ring-spinner"></div>
+  <p>Enregistrement en cours…</p>
+</div>
+
+<div class="modal-overlay" id="recapModal">
+  <div class="modal-card">
+    <div class="modal-icon">✓</div>
+    <h2>Vente enregistrée avec succès</h2>
+    <p class="modal-ref">Référence n° <strong id="recapSaleId"></strong></p>
+
+    <div class="recap-section">
+      <div class="recap-row"><span>Agents</span><span id="recapSellers"></span></div>
+      <div class="recap-row"><span>Client</span><span id="recapCustomer"></span></div>
+      <div class="recap-row"><span>Téléphone</span><span id="recapPhone"></span></div>
+      <div class="recap-row"><span>Ville</span><span id="recapCity"></span></div>
+      <div class="recap-row"><span>Adresse</span><span id="recapAddress"></span></div>
+      <div class="recap-row"><span>N° Commande</span><span id="recapOrder"></span></div>
+      <div class="recap-row"><span>Paiement</span><span id="recapPayment"></span></div>
+      <div class="recap-row"><span>Service</span><span id="recapService"></span></div>
+    </div>
+
+    <div class="recap-items-title">Articles</div>
+    <div id="recapItems"></div>
+
+    <div class="recap-totals">
+      <div class="recap-row"><span>Frais de service</span><span id="recapFee"></span></div>
+      <div class="recap-row"><span>Volume total</span><span id="recapVolume"></span></div>
+      <div class="recap-row total"><span>Total</span><span id="recapTotal"></span></div>
+    </div>
+
+    <button type="button" class="submit-btn" id="recapCloseBtn">Nouvelle vente</button>
+  </div>
+</div>
 
 <script>
   // ====== CONFIGURATION — replace these two values before publishing ======
@@ -588,13 +770,33 @@
     sellerChip3: document.getElementById('sellerChip3'),
     paymentMethod: document.getElementById('paymentMethod'),
     serviceName: document.getElementById('serviceName'),
+    customerCity: document.getElementById('customerCity'),
     itemSearch: document.getElementById('itemSearch'),
     searchResults: document.getElementById('searchResults'),
     cart: document.getElementById('cart'),
     totalCount: document.getElementById('totalCount'),
     totalAmount: document.getElementById('totalAmount'),
     totalVolume: document.getElementById('totalVolume'),
+    serviceFeeRow: document.getElementById('serviceFeeRow'),
+    serviceFeeValue: document.getElementById('serviceFeeValue'),
+    serviceFeeServiceLabel: document.getElementById('serviceFeeServiceLabel'),
     submitBtn: document.getElementById('submitBtn'),
+    submitOverlay: document.getElementById('submitOverlay'),
+    recapModal: document.getElementById('recapModal'),
+    recapCloseBtn: document.getElementById('recapCloseBtn'),
+    recapSaleId: document.getElementById('recapSaleId'),
+    recapSellers: document.getElementById('recapSellers'),
+    recapCustomer: document.getElementById('recapCustomer'),
+    recapPhone: document.getElementById('recapPhone'),
+    recapCity: document.getElementById('recapCity'),
+    recapAddress: document.getElementById('recapAddress'),
+    recapOrder: document.getElementById('recapOrder'),
+    recapPayment: document.getElementById('recapPayment'),
+    recapService: document.getElementById('recapService'),
+    recapItems: document.getElementById('recapItems'),
+    recapFee: document.getElementById('recapFee'),
+    recapVolume: document.getElementById('recapVolume'),
+    recapTotal: document.getElementById('recapTotal'),
   };
 
   let cartItems = [];      // {itemId, itemName, unitPrice, unitVolume, qty}
@@ -602,6 +804,10 @@
   let searchSeq = 0;
   let allSellers = [];     // {id, name}, loaded once from config
   let selectedSellers = { 1: null, 2: null, 3: null };
+  let citiesData = [];     // [{name, prices:{header:value}}], loaded once from config
+  let servicesData = [];   // [{name, code}], loaded once from config
+  let pricingHeaders = []; // [H1..M1] — index 0 = Delivery1, index 1 = Delivery2
+  let isSubmitting = false;
 
   function showBanner(message, type){
     els.banner.textContent = message;
@@ -633,6 +839,9 @@
       const res = await fetch(`${SCRIPT_URL}?action=config`);
       const data = await res.json();
       allSellers = data.sellers || [];
+      citiesData = data.cities || [];
+      servicesData = data.services || [];
+      pricingHeaders = data.pricingHeaders || [];
       fillSelect(
         els.paymentMethod,
         (data.paymentMethods || []).map(p => ({ value: p, label: p })),
@@ -640,13 +849,64 @@
       );
       fillSelect(
         els.serviceName,
-        (data.serviceNames || []).map(s => ({ value: s, label: s })),
+        servicesData.map(s => ({ value: s.name, label: s.name })),
         'Sélectionner un service'
+      );
+      fillSelect(
+        els.customerCity,
+        citiesData.map(c => ({ value: c.name, label: c.name })),
+        'Sélectionner une ville'
       );
     }catch(err){
       showBanner("Impossible de charger la configuration. Vérifiez la connexion et réessayez.", 'err');
     }
   }
+
+  // ---- Service fee (city + service, with the Delivery1/Delivery2 split by basket volume) ----
+
+  function computeServiceFee(){
+    const cityName = els.customerCity.value;
+    const serviceName = els.serviceName.value;
+    if (!cityName || !serviceName) return null;
+
+    const city = citiesData.find(c => c.name === cityName);
+    const service = servicesData.find(s => s.name === serviceName);
+    if (!city || !service) return 0;
+
+    const code = (service.code || '').trim().toLowerCase();
+    if (!code) return 0;
+
+    // "Delivery"/"Livraison" is special: pricing depends on basket volume rather
+    // than a direct name match (columns H/I = pricingHeaders[0]/[1] = Delivery1/Delivery2).
+    if (code === 'delivery' || code === 'livraison'){
+      const totalVolume = cartItems.reduce((sum, i) => sum + i.qty * i.unitVolume, 0);
+      const header = totalVolume > 0.250 ? pricingHeaders[0] : pricingHeaders[1];
+      return Number(city.prices[header]) || 0;
+    }
+
+    // Every other service is matched by name against the pricing headers
+    // (skipping the first two columns, which are reserved for Delivery1/Delivery2).
+    for (let i = 2; i < pricingHeaders.length; i++){
+      if ((pricingHeaders[i] || '').toLowerCase() === code){
+        return Number(city.prices[pricingHeaders[i]]) || 0;
+      }
+    }
+    return 0;
+  }
+
+  function updateServiceFeeDisplay(){
+    const fee = computeServiceFee();
+    if (fee === null){
+      els.serviceFeeRow.classList.remove('show');
+      return;
+    }
+    els.serviceFeeRow.classList.add('show');
+    els.serviceFeeServiceLabel.textContent = `(${els.serviceName.value})`;
+    els.serviceFeeValue.textContent = formatMAD(fee);
+  }
+
+  els.customerCity.addEventListener('change', updateServiceFeeDisplay);
+  els.serviceName.addEventListener('change', updateServiceFeeDisplay);
 
   // ---- Seller search-to-select (3 stacked slots) ----
 
@@ -834,6 +1094,7 @@
     els.totalCount.textContent = `${totalCount} article(s)`;
     els.totalAmount.textContent = formatMAD(totalAmount);
     els.totalVolume.textContent = formatM3(totalVolume);
+    updateServiceFeeDisplay();
   }
 
   function resetForm(){
@@ -843,10 +1104,17 @@
     els.searchResults.innerHTML = '';
     els.itemSearch.value = '';
     [1, 2, 3].forEach(slot => clearSeller(slot));
+    els.serviceFeeRow.classList.remove('show');
   }
 
   async function handleSubmit(e){
     e.preventDefault();
+
+    // Guard set first and synchronously: blocks a second submit event that was
+    // already queued by a fast double-click/double-tap before the button
+    // actually became disabled.
+    if (isSubmitting) return;
+
     hideBanner();
 
     if (!els.form.checkValidity()){
@@ -858,29 +1126,46 @@
       return;
     }
 
-    if (!selectedSellers[1]){
-      showBanner("Sélectionnez au moins l'Agent 1.", 'err');
-      return;
-    }
-
     const sellerIds = [1, 2, 3]
       .map(slot => selectedSellers[slot] ? selectedSellers[slot].id : '')
       .filter(v => v !== '');
+    if (sellerIds.length < 2){
+      showBanner("Sélectionnez au moins 2 agents pour valider la vente.", 'err');
+      return;
+    }
     if (new Set(sellerIds).size !== sellerIds.length){
       showBanner("Le même agent est sélectionné plusieurs fois.", 'err');
       return;
     }
 
+    const sellerLabels = [1, 2, 3]
+      .map(slot => selectedSellers[slot])
+      .filter(Boolean)
+      .map(s => `${s.id} — ${s.name}`);
+
+    const customerName = document.getElementById('customerName').value.trim();
+    const customerPhone = document.getElementById('customerPhone').value.trim();
+    const customerCity = els.customerCity.value;
+    const customerAddress = document.getElementById('customerAddress').value.trim();
+    const orderNumber = document.getElementById('orderNumber').value.trim();
+    const paymentMethod = els.paymentMethod.value;
+    const serviceName = els.serviceName.value;
+    const itemsSnapshot = cartItems.map(i => ({ ...i }));
+    const feeSnapshot = computeServiceFee() || 0;
+    const totalAmountSnapshot = itemsSnapshot.reduce((s, i) => s + i.qty * i.unitPrice, 0);
+    const totalVolumeSnapshot = itemsSnapshot.reduce((s, i) => s + i.qty * i.unitVolume, 0);
+
     const payload = {
       token: SHARED_TOKEN,
       sellerIds: sellerIds,
-      customerName: document.getElementById('customerName').value.trim(),
-      customerPhone: document.getElementById('customerPhone').value.trim(),
-      customerAddress: document.getElementById('customerAddress').value.trim(),
-      orderNumber: document.getElementById('orderNumber').value.trim(),
-      paymentMethod: els.paymentMethod.value,
-      serviceName: els.serviceName.value,
-      items: cartItems.map(i => ({
+      customerName: customerName,
+      customerPhone: customerPhone,
+      customerCity: customerCity,
+      customerAddress: customerAddress,
+      orderNumber: orderNumber,
+      paymentMethod: paymentMethod,
+      serviceName: serviceName,
+      items: itemsSnapshot.map(i => ({
         itemId: i.itemId,
         itemName: i.itemName,
         qty: i.qty,
@@ -889,8 +1174,9 @@
       }))
     };
 
+    isSubmitting = true;
     els.submitBtn.disabled = true;
-    els.submitBtn.textContent = 'Enregistrement…';
+    els.submitOverlay.classList.add('show');
 
     try{
       const res = await fetch(SCRIPT_URL, {
@@ -899,7 +1185,21 @@
       });
       const data = await res.json();
       if (data.success){
-        showBanner(`Vente enregistrée avec succès (Réf. ${data.saleId}).`, 'ok');
+        showRecap({
+          saleId: data.saleId,
+          sellerLabels: sellerLabels,
+          customerName: customerName,
+          customerPhone: customerPhone,
+          customerCity: customerCity,
+          customerAddress: customerAddress,
+          orderNumber: orderNumber,
+          paymentMethod: paymentMethod,
+          serviceName: serviceName,
+          items: itemsSnapshot,
+          serviceFee: (data.serviceFee !== undefined) ? data.serviceFee : feeSnapshot,
+          totalAmount: (data.totalAmount !== undefined) ? data.totalAmount : totalAmountSnapshot,
+          totalVolume: (data.totalVolume !== undefined) ? data.totalVolume : totalVolumeSnapshot
+        });
         resetForm();
       }else{
         showBanner(data.error || "Une erreur est survenue lors de l'enregistrement.", 'err');
@@ -907,10 +1207,46 @@
     }catch(err){
       showBanner("Connexion impossible. Vérifiez votre réseau et réessayez.", 'err');
     }finally{
+      isSubmitting = false;
       els.submitBtn.disabled = false;
-      els.submitBtn.textContent = 'Valider la vente';
+      els.submitOverlay.classList.remove('show');
     }
   }
+
+  function showRecap(r){
+    els.recapSaleId.textContent = r.saleId;
+    els.recapSellers.textContent = r.sellerLabels.join(', ');
+    els.recapCustomer.textContent = r.customerName;
+    els.recapPhone.textContent = r.customerPhone;
+    els.recapCity.textContent = r.customerCity;
+    els.recapAddress.textContent = r.customerAddress;
+    els.recapOrder.textContent = r.orderNumber;
+    els.recapPayment.textContent = r.paymentMethod;
+    els.recapService.textContent = r.serviceName;
+
+    els.recapItems.innerHTML = '';
+    r.items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'recap-item-row';
+      row.innerHTML = `
+        <span class="name">${escapeHtml(item.itemName)} × ${item.qty}</span>
+        <span>${formatMAD(item.unitPrice * item.qty)}</span>
+      `;
+      els.recapItems.appendChild(row);
+    });
+
+    els.recapFee.textContent = formatMAD(r.serviceFee);
+    els.recapVolume.textContent = formatM3(r.totalVolume);
+    els.recapTotal.textContent = formatMAD(r.totalAmount);
+
+    els.recapModal.classList.add('show');
+  }
+
+  function hideRecap(){
+    els.recapModal.classList.remove('show');
+  }
+
+  els.recapCloseBtn.addEventListener('click', hideRecap);
 
   els.itemSearch.addEventListener('input', debounceSearch);
   els.form.addEventListener('submit', handleSubmit);
