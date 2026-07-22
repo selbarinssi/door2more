@@ -14,12 +14,14 @@
  */
 
 // Must match SHARED_TOKEN in index.html — change this to your own value.
+
 var SHARED_TOKEN = 'RINCIGROUP';
 
 var SHEET_CONFIG = 'Config';
 var SHEET_CATALOG = 'Catalog';
 var SHEET_SALES = 'Sales';
 var SHEET_SALE_ITEMS = 'SaleItems';
+var SHEET_SALE_SELLERS = 'SaleSellers';
 
 function doGet(e) {
   var action = e.parameter.action;
@@ -95,7 +97,10 @@ function searchCatalog(query) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return { items: [] };
 
-  var dataRange = sheet.getRange(2, 1, lastRow - 1, 4); // ItemID, ItemName, Price, Volume
+  // Search only ItemID + ItemName (columns 1-2). Narrower range = fewer cells to
+  // scan and no accidental matches against Price/Volume numbers, so results
+  // come back faster and cleaner even with 40,000+ rows.
+  var dataRange = sheet.getRange(2, 1, lastRow - 1, 2);
   var finder = dataRange.createTextFinder(query).matchCase(false).useRegularExpression(false);
   var matches = finder.findAll();
 
@@ -119,10 +124,10 @@ function searchCatalog(query) {
 // ---------- RECORD SALE ----------
 
 function recordSale(payload) {
-  var required = ['sellerId', 'customerName', 'customerPhone', 'customerAddress',
+  var required = ['sellerIds', 'customerName', 'customerPhone', 'customerAddress',
                    'orderNumber', 'paymentMethod', 'serviceName'];
   for (var i = 0; i < required.length; i++) {
-    if (!payload[required[i]]) {
+    if (!payload[required[i]] || (Array.isArray(payload[required[i]]) && !payload[required[i]].length)) {
       return { success: false, error: 'Missing field: ' + required[i] };
     }
   }
@@ -133,34 +138,58 @@ function recordSale(payload) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var salesSheet = ss.getSheetByName(SHEET_SALES);
   var itemsSheet = ss.getSheetByName(SHEET_SALE_ITEMS);
+  var sellersSheet = ss.getSheetByName(SHEET_SALE_SELLERS);
 
-  var saleId = Utilities.getUuid();
-  var timestamp = new Date();
+  // Lock while we assign the next ID and write the row, so two agents
+  // submitting at the same moment can never end up with the same SaleID.
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
 
-  var totalAmount = 0;
-  var totalVolume = 0;
-  var itemRows = [];
+  try {
+    var saleId = getNextSaleId(salesSheet);
+    var timestamp = new Date();
+    var sellerIds = payload.sellerIds.join(', ');
 
-  payload.items.forEach(function (item) {
-    var qty = Number(item.qty) || 0;
-    var unitPrice = Number(item.unitPrice) || 0;
-    var unitVolume = Number(item.unitVolume) || 0;
-    var lineTotal = qty * unitPrice;
-    var lineVolume = qty * unitVolume;
-    totalAmount += lineTotal;
-    totalVolume += lineVolume;
-    itemRows.push([saleId, item.itemId, item.itemName, qty, unitPrice, lineTotal, unitVolume, lineVolume]);
-  });
+    var totalAmount = 0;
+    var totalVolume = 0;
+    var itemRows = [];
 
-  salesSheet.appendRow([
-    saleId, timestamp, payload.sellerId, payload.customerName, payload.customerPhone,
-    payload.customerAddress, payload.orderNumber, payload.paymentMethod, payload.serviceName,
-    totalAmount, totalVolume
-  ]);
+    payload.items.forEach(function (item) {
+      var qty = Number(item.qty) || 0;
+      var unitPrice = Number(item.unitPrice) || 0;
+      var unitVolume = Number(item.unitVolume) || 0;
+      var lineTotal = qty * unitPrice;
+      var lineVolume = qty * unitVolume;
+      totalAmount += lineTotal;
+      totalVolume += lineVolume;
+      itemRows.push([saleId, item.itemId, item.itemName, qty, unitPrice, lineTotal, unitVolume, lineVolume]);
+    });
 
-  itemRows.forEach(function (row) {
-    itemsSheet.appendRow(row);
-  });
+    salesSheet.appendRow([
+      saleId, timestamp, sellerIds, payload.customerName, payload.customerPhone,
+      payload.customerAddress, payload.orderNumber, payload.paymentMethod, payload.serviceName,
+      totalAmount, totalVolume
+    ]);
 
-  return { success: true, saleId: saleId, totalAmount: totalAmount, totalVolume: totalVolume };
+    itemRows.forEach(function (row) {
+      itemsSheet.appendRow(row);
+    });
+
+    payload.sellerIds.forEach(function (id) {
+      sellersSheet.appendRow([saleId, id]);
+    });
+
+    return { success: true, saleId: saleId, totalAmount: totalAmount, totalVolume: totalVolume };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Simple incrementing SaleID (1, 2, 3…), based on the last row already in Sales.
+// Runs inside the lock in recordSale(), so it's safe against concurrent submits.
+function getNextSaleId(salesSheet) {
+  var lastRow = salesSheet.getLastRow();
+  if (lastRow < 2) return 1;
+  var lastId = Number(salesSheet.getRange(lastRow, 1).getValue()) || 0;
+  return lastId + 1;
 }
