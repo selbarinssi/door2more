@@ -625,6 +625,11 @@
       </div>
 
       <div class="field">
+        <label for="customerEmail">Email Client</label>
+        <input type="email" id="customerEmail" placeholder="client@exemple.com">
+      </div>
+
+      <div class="field">
         <label for="customerCity">Ville Client</label>
         <select id="customerCity" required>
           <option value="" disabled selected>Chargement…</option>
@@ -727,6 +732,7 @@
       <div class="recap-row"><span>Agents</span><span id="recapSellers"></span></div>
       <div class="recap-row"><span>Client</span><span id="recapCustomer"></span></div>
       <div class="recap-row"><span>Téléphone</span><span id="recapPhone"></span></div>
+      <div class="recap-row"><span>Email</span><span id="recapEmail"></span></div>
       <div class="recap-row"><span>Ville</span><span id="recapCity"></span></div>
       <div class="recap-row"><span>Adresse</span><span id="recapAddress"></span></div>
       <div class="recap-row"><span>N° Commande</span><span id="recapOrder"></span></div>
@@ -788,6 +794,7 @@
     recapSellers: document.getElementById('recapSellers'),
     recapCustomer: document.getElementById('recapCustomer'),
     recapPhone: document.getElementById('recapPhone'),
+    recapEmail: document.getElementById('recapEmail'),
     recapCity: document.getElementById('recapCity'),
     recapAddress: document.getElementById('recapAddress'),
     recapOrder: document.getElementById('recapOrder'),
@@ -1146,6 +1153,7 @@
 
     const customerName = document.getElementById('customerName').value.trim();
     const customerPhone = document.getElementById('customerPhone').value.trim();
+    const customerEmail = document.getElementById('customerEmail').value.trim();
     const customerCity = els.customerCity.value;
     const customerAddress = document.getElementById('customerAddress').value.trim();
     const orderNumber = document.getElementById('orderNumber').value.trim();
@@ -1161,6 +1169,7 @@
       sellerIds: sellerIds,
       customerName: customerName,
       customerPhone: customerPhone,
+      customerEmail: customerEmail,
       customerCity: customerCity,
       customerAddress: customerAddress,
       orderNumber: orderNumber,
@@ -1191,6 +1200,7 @@
           sellerLabels: sellerLabels,
           customerName: customerName,
           customerPhone: customerPhone,
+          customerEmail: customerEmail,
           customerCity: customerCity,
           customerAddress: customerAddress,
           orderNumber: orderNumber,
@@ -1219,6 +1229,7 @@
     els.recapSellers.textContent = r.sellerLabels.join(', ');
     els.recapCustomer.textContent = r.customerName;
     els.recapPhone.textContent = r.customerPhone;
+    els.recapEmail.textContent = r.customerEmail || '—';
     els.recapCity.textContent = r.customerCity;
     els.recapAddress.textContent = r.customerAddress;
     els.recapOrder.textContent = r.orderNumber;
