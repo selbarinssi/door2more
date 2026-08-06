@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0058A3">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Door2More">
+<title>Door2More — Validation des ventes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700;800&family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ikea-blue:#0058A3;
+    --ikea-blue-dark:#00417A;
+    --ikea-yellow:#FFDB00;
+    --bg:#F5F5F3;
+    --card:#FFFFFF;
+    --ink:#111111;
+    --ink-soft:#5A5A5A;
+    --line:#E2E2E0;
+    --ok:#1E7A34;
+    --ok-bg:#EAF6EC;
+    --err:#B3261E;
+    --err-bg:#FCEAE9;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(0,0,0,0.06), 0 4px 14px rgba(0,0,0,0.05);
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Noto Sans','Noto Sans Arabic',Verdana,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:104px;
+  }
+  button{ font-family:inherit; }
+
+  header.topbar{
+    background:var(--ikea-blue);
+    color:#fff;
+    padding:20px 20px 24px;
+  }
+  header.topbar .inner{
+    max-width:480px;
+    margin:0 auto;
+  }
+  header.topbar .eyebrow{
+    display:inline-block;
+    background:var(--ikea-yellow);
+    color:var(--ikea-blue-dark);
+    font-weight:800;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:3px 10px;
+    border-radius:4px;
+    margin-bottom:10px;
+  }
+  header.topbar h1{
+    margin:0;
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:-0.01em;
+  }
+  header.topbar p{
+    margin:6px 0 0;
+    font-size:13.5px;
+    color:#D8E7F5;
+  }
+
+  main.container{
+    max-width:480px;
+    margin:0 auto;
+    padding:18px 16px 0;
+  }
+
+  #banner{
+    display:none;
+    max-width:480px;
+    margin:16px auto 0;
+    padding:12px 16px;
+    border-radius:var(--radius);
+    font-size:14px;
+    font-weight:600;
+  }
+  #banner.show{ display:block; }
+  #banner.ok{ background:var(--ok-bg); color:var(--ok); border:1px solid #BFE3C6; }
+  #banner.err{ background:var(--err-bg); color:var(--err); border:1px solid #F2C6C3; }
+
+  .step{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    margin-bottom:16px;
+    padding:18px 18px 20px;
+    border:1px solid var(--line);
+  }
+  .step-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .step-num{
+    flex:none;
+    width:26px; height:26px;
+    border-radius:50%;
+    background:var(--ikea-blue);
+    color:#fff;
+    font-weight:800;
+    font-size:13px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .step-head h2{
+    margin:0;
+    font-size:15px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    color:var(--ikea-blue-dark);
+  }
+
+  .field{ margin-bottom:14px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{
+    display:block;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+  }
+  .field input, .field select{
+    width:100%;
+    padding:12px 12px;
+    font-size:16px;
+    font-family:inherit;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .field input:focus, .field select:focus{
+    outline:none;
+    border-color:var(--ikea-blue);
+    box-shadow:0 0 0 3px rgba(0,88,163,0.15);
+  }
+  .seller-field{ margin-bottom:10px; }
+  .seller-chip{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border:1.5px solid var(--ikea-blue);
+    border-radius:8px;
+    padding:11px 12px;
+    background:#EAF2FA;
+  }
+  .seller-chip .chip-label{
+    font-size:15px;
+    font-weight:700;
+    color:var(--ikea-blue-dark);
+  }
+  .seller-chip .remove{
+    background:none;
+    border:none;
+    color:var(--ikea-blue-dark);
+    font-size:16px;
+    font-weight:800;
+    cursor:pointer;
+    opacity:0.6;
+  }
+  .seller-chip .remove:hover{ opacity:1; }
+  .row2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    margin-bottom:14px;
+  }
+  .row2 .field{ margin-bottom:0; }
+  @media(max-width:480px){ .row2{ grid-template-columns:1fr; } }
+
+  /* --- item search --- */
+  .search-wrap{ position:relative; margin-bottom:12px; }
+  .search-wrap input{
+    padding-left:38px;
+  }
+  .search-wrap::before{
+    content:"";
+    position:absolute;
+    left:12px; top:50%;
+    width:16px; height:16px;
+    transform:translateY(-50%);
+    border:2px solid var(--ink-soft);
+    border-radius:50%;
+    box-sizing:border-box;
+  }
+  .search-wrap::after{
+    content:"";
+    position:absolute;
+    left:24px; top:23px;
+    width:7px; height:2px;
+    background:var(--ink-soft);
+    transform:rotate(45deg);
+  }
+  .search-hint{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:-6px 0 12px;
+  }
+
+  .results{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:6px;
+  }
+  .result-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:9px 10px;
+  }
+  .result-row .info{ flex:1; min-width:0; }
+  .result-row .info .name{ font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .result-row .info .meta{ font-size:12px; color:var(--ink-soft); }
+  .result-row button{
+    flex:none;
+    background:var(--ikea-blue);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    padding:8px 14px;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .result-row button:active{ background:var(--ikea-blue-dark); }
+  .empty-note{
+    font-size:13px;
+    color:var(--ink-soft);
+    padding:8px 2px;
+  }
+
+  /* --- cart: IKEA-style price tags --- */
+  .cart-title{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+    margin:18px 0 10px;
+  }
+  .cart{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .tag{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:var(--ikea-yellow);
+    border-radius:4px 10px 10px 4px;
+    padding:10px 12px 10px 16px;
+  }
+  .tag::before{
+    content:"";
+    position:absolute;
+    left:-6px; top:50%;
+    width:12px; height:12px;
+    background:var(--ikea-yellow);
+    border-radius:50%;
+    transform:translateY(-50%);
+    box-shadow:inset 0 0 0 2px var(--bg);
+  }
+  .tag .tag-hole{
+    flex:none;
+    width:8px; height:8px;
+    border-radius:50%;
+    background:var(--bg);
+  }
+  .tag .tag-info{ flex:1; min-width:0; }
+  .tag .tag-info .name{
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--ikea-blue-dark);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .tag .tag-info .id{
+    font-size:11px;
+    color:var(--ikea-blue-dark);
+    opacity:0.7;
+  }
+  .tag .qty-ctrl{
+    flex:none;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:rgba(255,255,255,0.55);
+    border-radius:6px;
+    padding:2px;
+  }
+  .tag .qty-ctrl button{
+    width:26px; height:26px;
+    border:none;
+    border-radius:5px;
+    background:#fff;
+    font-weight:800;
+    font-size:15px;
+    cursor:pointer;
+    color:var(--ikea-blue-dark);
+  }
+  .tag .qty-ctrl span{
+    min-width:20px;
+    text-align:center;
+    font-weight:800;
+    font-size:14px;
+    color:var(--ikea-blue-dark);
+  }
+  .tag .price{
+    flex:none;
+    font-weight:800;
+    font-size:15px;
+    color:var(--ikea-blue-dark);
+    font-variant-numeric:tabular-nums;
+    min-width:64px;
+    text-align:right;
+  }
+  .tag .remove{
+    flex:none;
+    background:none;
+    border:none;
+    color:var(--ikea-blue-dark);
+    font-size:18px;
+    font-weight:800;
+    cursor:pointer;
+    opacity:0.6;
+    padding:0 2px;
+  }
+  .tag .remove:hover{ opacity:1; }
+
+  .cart-empty{
+    font-size:13px;
+    color:var(--ink-soft);
+    border:1.5px dashed var(--line);
+    border-radius:8px;
+    padding:16px;
+    text-align:center;
+  }
+
+  .totals{
+    margin-top:16px;
+    border-top:1px solid var(--line);
+    padding-top:14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+  }
+  .totals .label{ font-size:13px; color:var(--ink-soft); font-weight:600; }
+  .totals .value{ font-size:22px; font-weight:800; color:var(--ikea-blue-dark); font-variant-numeric:tabular-nums; }
+  .totals .sub{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+
+  .bottom-bar{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    background:#fff;
+    border-top:1px solid var(--line);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+    box-shadow:0 -2px 14px rgba(0,0,0,0.08);
+    z-index:50;
+  }
+  .bottom-bar .inner{
+    max-width:480px;
+    margin:0 auto;
+  }
+  .submit-btn{
+    width:100%;
+    background:var(--ikea-yellow);
+    color:var(--ikea-blue-dark);
+    border:none;
+    border-radius:10px;
+    padding:16px;
+    font-family:'Noto Sans','Noto Sans Arabic',Verdana,Arial,sans-serif;
+    font-size:16px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+  }
+  .submit-btn:active{ transform:translateY(1px); }
+  .submit-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  /* --- service fee row (shown just above the total) --- */
+  .fee-row{
+    display:none;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px dashed var(--line);
+    font-size:13px;
+  }
+  .fee-row.show{ display:flex; }
+  .fee-row .label{ color:var(--ink-soft); font-weight:600; }
+  .fee-row .label span{ color:var(--ikea-blue-dark); font-weight:700; }
+  .fee-row .fee-value{ font-weight:800; color:var(--ikea-blue-dark); font-variant-numeric:tabular-nums; }
+
+  /* --- submit overlay: blocks re-taps while a sale is being saved --- */
+  .submit-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(245,245,243,0.9);
+    z-index:200;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+  }
+  .submit-overlay.show{ display:flex; }
+  .ring-spinner{
+    width:46px; height:46px;
+    border:4px solid var(--line);
+    border-top-color:var(--ikea-blue);
+    border-radius:50%;
+    animation:ring-spin 0.8s linear infinite;
+  }
+  @keyframes ring-spin{ to{ transform:rotate(360deg); } }
+  .submit-overlay p{
+    margin:0;
+    font-size:14px;
+    font-weight:700;
+    color:var(--ikea-blue-dark);
+  }
+
+  /* --- page loader: shown while initial config (sellers/cities/services) loads --- */
+  .page-loader{
+    position:fixed;
+    inset:0;
+    background:var(--bg);
+    z-index:300;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    padding:24px;
+    text-align:center;
+  }
+  .page-loader.hide{ display:none; }
+  .page-loader p{
+    margin:0;
+    font-size:14px;
+    font-weight:700;
+    color:var(--ikea-blue-dark);
+  }
+  .page-loader .retry-btn{
+    display:none;
+    background:var(--ikea-blue);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:10px 20px;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .page-loader.error .ring-spinner{ display:none; }
+  .page-loader.error .retry-btn{ display:inline-block; }
+  .page-loader.error p{ color:var(--err); }
+
+  /* --- recap modal (shown after a successful submit) --- */
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(17,17,17,0.5);
+    z-index:210;
+    align-items:flex-end;
+    justify-content:center;
+    padding:0;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-card{
+    background:#fff;
+    width:100%;
+    max-width:480px;
+    max-height:88vh;
+    overflow-y:auto;
+    border-radius:16px 16px 0 0;
+    padding:24px 20px calc(20px + env(safe-area-inset-bottom));
+    box-shadow:0 -4px 24px rgba(0,0,0,0.2);
+  }
+  .modal-icon{
+    width:52px; height:52px;
+    border-radius:50%;
+    background:var(--ok-bg);
+    color:var(--ok);
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px;
+    font-weight:800;
+    margin:0 auto 14px;
+  }
+  .modal-card h2{
+    margin:0 0 4px;
+    font-size:17px;
+    font-weight:800;
+    text-align:center;
+    color:var(--ink);
+  }
+  .modal-ref{
+    text-align:center;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 18px;
+  }
+  .modal-ref strong{ color:var(--ikea-blue-dark); }
+  .recap-section{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:4px 12px;
+    margin-bottom:14px;
+  }
+  .recap-row{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:9px 0;
+    border-bottom:1px solid var(--line);
+    font-size:13.5px;
+  }
+  .recap-row:last-child{ border-bottom:none; }
+  .recap-row span:first-child{ color:var(--ink-soft); font-weight:600; flex:none; }
+  .recap-row span:last-child{ text-align:right; font-weight:700; color:var(--ink); }
+  .recap-items-title{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+    margin:16px 0 8px;
+  }
+  .recap-item-row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    font-size:13px;
+    padding:6px 0;
+  }
+  .recap-item-row .name{ flex:1; min-width:0; }
+  .recap-totals{
+    border-top:1.5px solid var(--line);
+    margin-top:10px;
+    padding-top:6px;
+  }
+  .recap-totals .recap-row.total span{
+    font-size:17px;
+    font-weight:800;
+    color:var(--ikea-blue-dark);
+  }
+  #recapCloseBtn{ margin-top:18px; }
+
+  footer.foot{
+    max-width:480px;
+    margin:20px auto 0;
+    padding:0 16px;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-loader" id="pageLoader">
+  <div class="ring-spinner"></div>
+  <p id="pageLoaderText">Chargement de la configuration…</p>
+  <button type="button" class="retry-btn" id="pageLoaderRetry">Réessayer</button>
+</div>
+
+<header class="topbar">
+  <div class="inner">
+    <span class="eyebrow">Validation des ventes</span>
+    <h1>Door2More</h1>
+    <p>By Saad EL BARINSSI.</p>
+  </div>
+</header>
+
+<div id="banner"></div>
+
+<main class="container">
+  <form id="saleForm" novalidate>
+
+    <!-- STEP 1: Seller + Customer -->
+    <section class="step">
+      <div class="step-head">
+        <div class="step-num">1</div>
+        <h2>Vendeur &amp; Client</h2>
+      </div>
+      <div class="search-hint" style="margin:-10px 0 14px;">Minimum 2 agents requis pour valider une vente.</div>
+
+      <div class="field seller-field">
+        <label for="sellerSearch1">Agent 1</label>
+        <div class="seller-picker" id="sellerPicker1">
+          <div class="search-wrap">
+            <input type="text" id="sellerSearch1" placeholder="Rechercher un agent par ID ou nom…" autocomplete="off">
+          </div>
+          <div class="results" id="sellerResults1"></div>
+        </div>
+        <div class="seller-chip" id="sellerChip1" style="display:none">
+          <span class="chip-label"></span>
+          <button type="button" class="remove" data-slot="1">✕</button>
+        </div>
+      </div>
+
+      <div class="field seller-field">
+        <label for="sellerSearch2">Agent 2</label>
+        <div class="seller-picker" id="sellerPicker2">
+          <div class="search-wrap">
+            <input type="text" id="sellerSearch2" placeholder="Rechercher un agent par ID ou nom…" autocomplete="off">
+          </div>
+          <div class="results" id="sellerResults2"></div>
+        </div>
+        <div class="seller-chip" id="sellerChip2" style="display:none">
+          <span class="chip-label"></span>
+          <button type="button" class="remove" data-slot="2">✕</button>
+        </div>
+      </div>
+
+      <div class="field seller-field">
+        <label for="sellerSearch3">Agent 3</label>
+        <div class="seller-picker" id="sellerPicker3">
+          <div class="search-wrap">
+            <input type="text" id="sellerSearch3" placeholder="Rechercher un agent par ID ou nom…" autocomplete="off">
+          </div>
+          <div class="results" id="sellerResults3"></div>
+        </div>
+        <div class="seller-chip" id="sellerChip3" style="display:none">
+          <span class="chip-label"></span>
+          <button type="button" class="remove" data-slot="3">✕</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="customerName">Nom du client</label>
+        <input type="text" id="customerName" placeholder="Ex: Youssef El Amrani" required>
+      </div>
+
+      <div class="row2">
+  <div class="field">
+    <label for="customerPhone">Téléphone Client</label>
+    <input type="tel" id="customerPhone" placeholder="06 00 00 00 00" required>
+  </div>
+  <div class="field">
+    <label for="customerEmail">Email Client</label>
+    <input type="email" id="customerEmail" placeholder="client@exemple.com">
+  </div>
+</div>
+
+<div class="field">
+  <label for="orderNumber">N° de Commande Actuelle</label>
+  <input type="text" id="orderNumber" placeholder="Ex: CMD-10234" required>
+</div>
+
+      <div class="field">
+        <label for="customerCity">Ville Client</label>
+        <select id="customerCity" required>
+          <option value="" disabled selected>Chargement…</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="customerAddress">Adresse Client</label>
+        <input type="text" id="customerAddress" placeholder="Adresse de livraison" required>
+      </div>
+    </section>
+
+    <!-- STEP 2: Payment + Service -->
+    <section class="step">
+      <div class="step-head">
+        <div class="step-num">2</div>
+        <h2>Paiement &amp; Service</h2>
+      </div>
+
+      <div class="field">
+        <label for="paymentMethod">Méthode de paiement</label>
+        <select id="paymentMethod" required>
+          <option value="" disabled selected>Chargement…</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="serviceName">Service</label>
+        <select id="serviceName" required>
+          <option value="" disabled selected>Chargement…</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- STEP 3: Items -->
+    <section class="step">
+      <div class="step-head">
+        <div class="step-num">3</div>
+        <h2>Articles</h2>
+      </div>
+
+      <div class="search-wrap">
+        <input type="text" id="itemSearch" placeholder="Rechercher par référence ou nom d'article…" autocomplete="off">
+      </div>
+      <div class="search-hint">Tapez au moins 2 caractères. Les 25 premiers résultats s'affichent.</div>
+
+      <div class="results" id="searchResults"></div>
+
+      <div class="cart-title">Panier</div>
+      <div class="cart" id="cart"></div>
+    </section>
+
+    <!-- STEP 4: Review + Submit -->
+    <section class="step">
+      <div class="step-head">
+        <div class="step-num">4</div>
+        <h2>Validation</h2>
+      </div>
+
+      <div class="fee-row" id="serviceFeeRow">
+        <div class="label">Frais de service <span id="serviceFeeServiceLabel"></span></div>
+        <div class="fee-value" id="serviceFeeValue">0,00 MAD</div>
+      </div>
+
+      <div class="totals">
+        <div>
+          <div class="label">Total articles</div>
+          <div class="sub" id="totalCount">0 article(s)</div>
+        </div>
+        <div style="text-align:right">
+          <div class="value" id="totalAmount">0,00 MAD</div>
+          <div class="sub" id="totalVolume">0,00 m³</div>
+        </div>
+      </div>
+    </section>
+
+  </form>
+</main>
+
+<div class="bottom-bar">
+  <div class="inner">
+    <button type="submit" form="saleForm" class="submit-btn" id="submitBtn" disabled>Valider la vente</button>
+  </div>
+</div>
+
+<footer class="foot">Les données sont enregistrées automatiquement avec la date et l'heure de validation.</footer>
+
+<div class="submit-overlay" id="submitOverlay">
+  <div class="ring-spinner"></div>
+  <p>Enregistrement en cours…</p>
+</div>
+
+<div class="modal-overlay" id="recapModal">
+  <div class="modal-card">
+    <div class="modal-icon">✓</div>
+    <h2>Vente enregistrée avec succès</h2>
+    <p class="modal-ref">Référence n° <strong id="recapSaleId"></strong></p>
+
+    <div class="recap-section">
+      <div class="recap-row"><span>Agents</span><span id="recapSellers"></span></div>
+      <div class="recap-row"><span>Client</span><span id="recapCustomer"></span></div>
+      <div class="recap-row"><span>Téléphone</span><span id="recapPhone"></span></div>
+      <div class="recap-row"><span>Email</span><span id="recapEmail"></span></div>
+      <div class="recap-row"><span>Ville</span><span id="recapCity"></span></div>
+      <div class="recap-row"><span>Adresse</span><span id="recapAddress"></span></div>
+      <div class="recap-row"><span>N° Commande</span><span id="recapOrder"></span></div>
+      <div class="recap-row"><span>Paiement</span><span id="recapPayment"></span></div>
+      <div class="recap-row"><span>Service</span><span id="recapService"></span></div>
+    </div>
+
+    <div class="recap-items-title">Articles</div>
+    <div id="recapItems"></div>
+
+    <div class="recap-totals">
+      <div class="recap-row"><span>Frais de service</span><span id="recapFee"></span></div>
+      <div class="recap-row"><span>Volume total</span><span id="recapVolume"></span></div>
+      <div class="recap-row total"><span>Total</span><span id="recapTotal"></span></div>
+    </div>
+
+    <button type="button" class="submit-btn" id="recapCloseBtn">Nouvelle vente</button>
+  </div>
+</div>
+
+<script>
+  // ====== CONFIGURATION — replace these two values before publishing ======
+  const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbzY0J2_7oe0yF_JBDja8rkW5mc8Kpa0dD3GDuNfkSp98LFQgndWrx6WBAIHa-uDbyBPHg/exec";
+  const SHARED_TOKEN = "RINCIGROUP";
+  // ==========================================================================
+
+  const els = {
+    banner: document.getElementById('banner'),
+    form: document.getElementById('saleForm'),
+    sellerPicker1: document.getElementById('sellerPicker1'),
+    sellerPicker2: document.getElementById('sellerPicker2'),
+    sellerPicker3: document.getElementById('sellerPicker3'),
+    sellerSearch1: document.getElementById('sellerSearch1'),
+    sellerSearch2: document.getElementById('sellerSearch2'),
+    sellerSearch3: document.getElementById('sellerSearch3'),
+    sellerResults1: document.getElementById('sellerResults1'),
+    sellerResults2: document.getElementById('sellerResults2'),
+    sellerResults3: document.getElementById('sellerResults3'),
+    sellerChip1: document.getElementById('sellerChip1'),
+    sellerChip2: document.getElementById('sellerChip2'),
+    sellerChip3: document.getElementById('sellerChip3'),
+    paymentMethod: document.getElementById('paymentMethod'),
+    serviceName: document.getElementById('serviceName'),
+    customerCity: document.getElementById('customerCity'),
+    itemSearch: document.getElementById('itemSearch'),
+    searchResults: document.getElementById('searchResults'),
+    cart: document.getElementById('cart'),
+    totalCount: document.getElementById('totalCount'),
+    totalAmount: document.getElementById('totalAmount'),
+    totalVolume: document.getElementById('totalVolume'),
+    serviceFeeRow: document.getElementById('serviceFeeRow'),
+    serviceFeeValue: document.getElementById('serviceFeeValue'),
+    serviceFeeServiceLabel: document.getElementById('serviceFeeServiceLabel'),
+    submitBtn: document.getElementById('submitBtn'),
+    submitOverlay: document.getElementById('submitOverlay'),
+    pageLoader: document.getElementById('pageLoader'),
+    pageLoaderText: document.getElementById('pageLoaderText'),
+    pageLoaderRetry: document.getElementById('pageLoaderRetry'),
+    recapModal: document.getElementById('recapModal'),
+    recapCloseBtn: document.getElementById('recapCloseBtn'),
+    recapSaleId: document.getElementById('recapSaleId'),
+    recapSellers: document.getElementById('recapSellers'),
+    recapCustomer: document.getElementById('recapCustomer'),
+    recapPhone: document.getElementById('recapPhone'),
+    recapEmail: document.getElementById('recapEmail'),
+    recapCity: document.getElementById('recapCity'),
+    recapAddress: document.getElementById('recapAddress'),
+    recapOrder: document.getElementById('recapOrder'),
+    recapPayment: document.getElementById('recapPayment'),
+    recapService: document.getElementById('recapService'),
+    recapItems: document.getElementById('recapItems'),
+    recapFee: document.getElementById('recapFee'),
+    recapVolume: document.getElementById('recapVolume'),
+    recapTotal: document.getElementById('recapTotal'),
+  };
+
+  let cartItems = [];      // {itemId, itemName, unitPrice, unitVolume, qty}
+  let searchTimer = null;
+  let searchSeq = 0;
+  let allSellers = [];     // {id, name}, loaded once from config
+  let selectedSellers = { 1: null, 2: null, 3: null };
+  let citiesData = [];     // [{name, prices:{header:value}}], loaded once from config
+  let servicesData = [];   // [{name, code}], loaded once from config
+  let pricingHeaders = []; // [H1..M1] — index 0 = Delivery1, index 1 = Delivery2
+  let isSubmitting = false;
+
+  function showBanner(message, type){
+    els.banner.textContent = message;
+    els.banner.className = 'show ' + type;
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  function hideBanner(){
+    els.banner.className = '';
+  }
+
+  function fillSelect(select, options, placeholder, placeholderDisabled = true){
+    select.innerHTML = '';
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.disabled = placeholderDisabled;
+    ph.selected = true;
+    ph.textContent = placeholder;
+    select.appendChild(ph);
+    options.forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt.value;
+      o.textContent = opt.label;
+      select.appendChild(o);
+    });
+  }
+
+  async function loadConfig(){
+    els.pageLoader.classList.remove('error', 'hide');
+    els.pageLoaderText.textContent = 'Chargement de la configuration…';
+    els.submitBtn.disabled = true;
+
+    try{
+      const res = await fetch(`${SCRIPT_URL}?action=config`);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      allSellers = data.sellers || [];
+      citiesData = data.cities || [];
+      servicesData = data.services || [];
+      pricingHeaders = data.pricingHeaders || [];
+      fillSelect(
+        els.paymentMethod,
+        (data.paymentMethods || []).map(p => ({ value: p, label: p })),
+        'Sélectionner un mode de paiement'
+      );
+      fillSelect(
+        els.serviceName,
+        servicesData.map(s => ({ value: s.name, label: s.name })),
+        'Sélectionner un service'
+      );
+      fillSelect(
+        els.customerCity,
+        citiesData.map(c => ({ value: c.name, label: c.name })),
+        'Sélectionner une ville'
+      );
+
+      els.pageLoader.classList.add('hide');
+      els.submitBtn.disabled = false;
+    }catch(err){
+      // Keep the full-page loader up but swap the ring for a retry button —
+      // better than dumping the user into a form with empty dropdowns.
+      els.pageLoaderText.textContent = "Impossible de charger la configuration. Vérifiez votre connexion et réessayez.";
+      els.pageLoader.classList.add('error');
+    }
+  }
+
+  els.pageLoaderRetry.addEventListener('click', loadConfig);
+
+  // ---- Service fee (city + service, with the Delivery1/Delivery2 split by basket volume) ----
+
+  function computeServiceFee(){
+    const cityName = els.customerCity.value;
+    const serviceName = els.serviceName.value;
+    if (!cityName || !serviceName) return null;
+
+    const city = citiesData.find(c => c.name === cityName);
+    const service = servicesData.find(s => s.name === serviceName);
+    if (!city || !service) return 0;
+
+    const code = (service.code || '').trim().toLowerCase();
+    if (!code) return 0;
+
+    // "Delivery"/"Livraison" is special: pricing depends on basket volume rather
+    // than a direct name match (columns H/I = pricingHeaders[0]/[1] = Delivery1/Delivery2).
+    if (code === 'delivery' || code === 'livraison'){
+      const totalVolume = cartItems.reduce((sum, i) => sum + i.qty * i.unitVolume, 0);
+      const header = totalVolume > 0.250 ? pricingHeaders[0] : pricingHeaders[1];
+      return Number(city.prices[header]) || 0;
+    }
+
+    // Every other service is matched by name against the pricing headers
+    // (skipping the first two columns, which are reserved for Delivery1/Delivery2).
+    for (let i = 2; i < pricingHeaders.length; i++){
+      if ((pricingHeaders[i] || '').toLowerCase() === code){
+        return Number(city.prices[pricingHeaders[i]]) || 0;
+      }
+    }
+    return 0;
+  }
+
+  function updateServiceFeeDisplay(fee){
+    if (fee === undefined) fee = computeServiceFee();
+    if (fee === null){
+      els.serviceFeeRow.classList.remove('show');
+      return;
+    }
+    els.serviceFeeRow.classList.add('show');
+    els.serviceFeeServiceLabel.textContent = `(${els.serviceName.value})`;
+    els.serviceFeeValue.textContent = formatMAD(fee);
+  }
+
+  els.customerCity.addEventListener('change', updateServiceFeeDisplay);
+  els.serviceName.addEventListener('change', updateServiceFeeDisplay);
+
+  // ---- Seller search-to-select (3 stacked slots) ----
+
+  function filterSellers(query){
+    const q = query.trim().toLowerCase();
+    if (q.length < 1) return [];
+    return allSellers.filter(s =>
+      s.id.toLowerCase().includes(q) || (s.name || '').toLowerCase().includes(q)
+    ).slice(0, 8);
+  }
+
+  function renderSellerResults(slot){
+    const resultsEl = els[`sellerResults${slot}`];
+    const query = els[`sellerSearch${slot}`].value;
+    if (!query.trim()){
+      resultsEl.innerHTML = '';
+      return;
+    }
+    const matches = filterSellers(query);
+    if (!matches.length){
+      resultsEl.innerHTML = '<div class="empty-note">Aucun agent trouvé.</div>';
+      return;
+    }
+    resultsEl.innerHTML = '';
+    matches.forEach(seller => {
+      const row = document.createElement('div');
+      row.className = 'result-row';
+      row.innerHTML = `
+        <div class="info">
+          <div class="name">${escapeHtml(seller.name)}</div>
+          <div class="meta">ID ${escapeHtml(seller.id)}</div>
+        </div>
+        <button type="button">Choisir</button>
+      `;
+      row.querySelector('button').addEventListener('click', () => selectSeller(slot, seller));
+      resultsEl.appendChild(row);
+    });
+  }
+
+  function selectSeller(slot, seller){
+    selectedSellers[slot] = seller;
+    els[`sellerSearch${slot}`].value = '';
+    els[`sellerResults${slot}`].innerHTML = '';
+    els[`sellerPicker${slot}`].style.display = 'none';
+    const chip = els[`sellerChip${slot}`];
+    chip.querySelector('.chip-label').textContent = `${seller.id} — ${seller.name}`;
+    chip.style.display = 'flex';
+  }
+
+  function clearSeller(slot){
+    selectedSellers[slot] = null;
+    els[`sellerChip${slot}`].style.display = 'none';
+    els[`sellerPicker${slot}`].style.display = 'block';
+  }
+
+  [1, 2, 3].forEach(slot => {
+    els[`sellerSearch${slot}`].addEventListener('input', () => renderSellerResults(slot));
+    els[`sellerChip${slot}`].querySelector('.remove').addEventListener('click', () => clearSeller(slot));
+  });
+
+  function debounceSearch(){
+    clearTimeout(searchTimer);
+    const q = els.itemSearch.value.trim();
+    if (q.length < 2){
+      els.searchResults.innerHTML = '';
+      return;
+    }
+    searchTimer = setTimeout(() => runSearch(q), 180);
+  }
+
+  async function runSearch(q){
+    const seq = ++searchSeq;
+    els.searchResults.innerHTML = '<div class="empty-note">Recherche…</div>';
+    try{
+      const res = await fetch(`${SCRIPT_URL}?action=search&q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      if (seq !== searchSeq) return; // a newer search has already started, ignore this one
+      renderResults(data.items || []);
+    }catch(err){
+      if (seq !== searchSeq) return;
+      els.searchResults.innerHTML = '<div class="empty-note">Recherche indisponible pour le moment.</div>';
+    }
+  }
+
+  function formatMAD(n){
+    return n.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' MAD';
+  }
+  function formatM3(n){
+    return n.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' m³';
+  }
+
+  function renderResults(items){
+    if (!items.length){
+      els.searchResults.innerHTML = '<div class="empty-note">Aucun article trouvé.</div>';
+      return;
+    }
+    els.searchResults.innerHTML = '';
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'result-row';
+      row.innerHTML = `
+        <div class="info">
+          <div class="name">${escapeHtml(item.name)}</div>
+          <div class="meta">Réf. ${escapeHtml(item.id)} · ${formatMAD(item.price)}</div>
+        </div>
+        <button type="button">Ajouter</button>
+      `;
+      row.querySelector('button').addEventListener('click', () => addToCart(item));
+      els.searchResults.appendChild(row);
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  }
+
+  function addToCart(item){
+    const existing = cartItems.find(c => c.itemId === item.id);
+    if (existing){
+      existing.qty += 1;
+    }else{
+      cartItems.push({
+        itemId: item.id,
+        itemName: item.name,
+        unitPrice: item.price,
+        unitVolume: item.volume,
+        qty: 1
+      });
+    }
+    renderCart();
+  }
+
+  function changeQty(itemId, delta){
+    const item = cartItems.find(c => c.itemId === itemId);
+    if (!item) return;
+    item.qty += delta;
+    if (item.qty <= 0){
+      cartItems = cartItems.filter(c => c.itemId !== itemId);
+    }
+    renderCart();
+  }
+
+  function removeFromCart(itemId){
+    cartItems = cartItems.filter(c => c.itemId !== itemId);
+    renderCart();
+  }
+
+  function renderCart(){
+    if (!cartItems.length){
+      els.cart.innerHTML = '<div class="cart-empty">Aucun article ajouté pour le moment.</div>';
+    }else{
+      els.cart.innerHTML = '';
+      cartItems.forEach(item => {
+        const tag = document.createElement('div');
+        tag.className = 'tag';
+        tag.innerHTML = `
+          <div class="tag-hole"></div>
+          <div class="tag-info">
+            <div class="name">${escapeHtml(item.itemName)}</div>
+            <div class="id">Réf. ${escapeHtml(item.itemId)}</div>
+          </div>
+          <div class="qty-ctrl">
+            <button type="button" data-action="dec">−</button>
+            <span>${item.qty}</span>
+            <button type="button" data-action="inc">+</button>
+          </div>
+          <div class="price">${formatMAD(item.unitPrice * item.qty)}</div>
+          <button type="button" class="remove" title="Retirer">✕</button>
+        `;
+        tag.querySelector('[data-action="dec"]').addEventListener('click', () => changeQty(item.itemId, -1));
+        tag.querySelector('[data-action="inc"]').addEventListener('click', () => changeQty(item.itemId, 1));
+        tag.querySelector('.remove').addEventListener('click', () => removeFromCart(item.itemId));
+        els.cart.appendChild(tag);
+      });
+    }
+    updateTotals();
+  }
+
+  function updateTotals(){
+    const totalCount = cartItems.reduce((sum, i) => sum + i.qty, 0);
+    const itemsAmount = cartItems.reduce((sum, i) => sum + i.qty * i.unitPrice, 0);
+    const totalVolume = cartItems.reduce((sum, i) => sum + i.qty * i.unitVolume, 0);
+    const fee = computeServiceFee();
+    els.totalCount.textContent = `${totalCount} article(s)`;
+    els.totalAmount.textContent = formatMAD(itemsAmount + (fee || 0));
+    els.totalVolume.textContent = formatM3(totalVolume);
+    updateServiceFeeDisplay(fee);
+  }
+
+  function resetForm(){
+    els.form.reset();
+    cartItems = [];
+    renderCart();
+    els.searchResults.innerHTML = '';
+    els.itemSearch.value = '';
+    [1, 2, 3].forEach(slot => clearSeller(slot));
+    els.serviceFeeRow.classList.remove('show');
+  }
+
+  async function handleSubmit(e){
+    e.preventDefault();
+
+    // Guard set first and synchronously: blocks a second submit event that was
+    // already queued by a fast double-click/double-tap before the button
+    // actually became disabled.
+    if (isSubmitting) return;
+
+    hideBanner();
+
+    if (!els.form.checkValidity()){
+      els.form.reportValidity();
+      return;
+    }
+    if (!cartItems.length){
+      showBanner("Ajoutez au moins un article avant de valider.", 'err');
+      return;
+    }
+
+    const sellerIds = [1, 2, 3]
+      .map(slot => selectedSellers[slot] ? selectedSellers[slot].id : '')
+      .filter(v => v !== '');
+    if (sellerIds.length < 2){
+      showBanner("Sélectionnez au moins 2 agents pour valider la vente.", 'err');
+      return;
+    }
+    if (new Set(sellerIds).size !== sellerIds.length){
+      showBanner("Le même agent est sélectionné plusieurs fois.", 'err');
+      return;
+    }
+
+    const sellerLabels = [1, 2, 3]
+      .map(slot => selectedSellers[slot])
+      .filter(Boolean)
+      .map(s => `${s.id} — ${s.name}`);
+
+    const customerName = document.getElementById('customerName').value.trim();
+    const customerPhone = document.getElementById('customerPhone').value.trim();
+    const customerEmail = document.getElementById('customerEmail').value.trim();
+    const customerCity = els.customerCity.value;
+    const customerAddress = document.getElementById('customerAddress').value.trim();
+    const orderNumber = document.getElementById('orderNumber').value.trim();
+    const paymentMethod = els.paymentMethod.value;
+    const serviceName = els.serviceName.value;
+    const itemsSnapshot = cartItems.map(i => ({ ...i }));
+    const feeSnapshot = computeServiceFee() || 0;
+    const totalAmountSnapshot = itemsSnapshot.reduce((s, i) => s + i.qty * i.unitPrice, 0);
+    const totalVolumeSnapshot = itemsSnapshot.reduce((s, i) => s + i.qty * i.unitVolume, 0);
+
+    const payload = {
+      token: SHARED_TOKEN,
+      sellerIds: sellerIds,
+      customerName: customerName,
+      customerPhone: customerPhone,
+      customerEmail: customerEmail,
+      customerCity: customerCity,
+      customerAddress: customerAddress,
+      orderNumber: orderNumber,
+      paymentMethod: paymentMethod,
+      serviceName: serviceName,
+      items: itemsSnapshot.map(i => ({
+        itemId: i.itemId,
+        itemName: i.itemName,
+        qty: i.qty,
+        unitPrice: i.unitPrice,
+        unitVolume: i.unitVolume
+      }))
+    };
+
+    isSubmitting = true;
+    els.submitBtn.disabled = true;
+    els.submitOverlay.classList.add('show');
+
+    try{
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success){
+        showRecap({
+          saleId: data.saleId,
+          sellerLabels: sellerLabels,
+          customerName: customerName,
+          customerPhone: customerPhone,
+          customerEmail: customerEmail,
+          customerCity: customerCity,
+          customerAddress: customerAddress,
+          orderNumber: orderNumber,
+          paymentMethod: paymentMethod,
+          serviceName: serviceName,
+          items: itemsSnapshot,
+          serviceFee: (data.serviceFee !== undefined) ? data.serviceFee : feeSnapshot,
+          totalAmount: (data.totalAmount !== undefined) ? data.totalAmount : totalAmountSnapshot,
+          totalVolume: (data.totalVolume !== undefined) ? data.totalVolume : totalVolumeSnapshot
+        });
+        resetForm();
+      }else{
+        showBanner(data.error || "Une erreur est survenue lors de l'enregistrement.", 'err');
+      }
+    }catch(err){
+      showBanner("Connexion impossible. Vérifiez votre réseau et réessayez.", 'err');
+    }finally{
+      isSubmitting = false;
+      els.submitBtn.disabled = false;
+      els.submitOverlay.classList.remove('show');
+    }
+  }
+
+  function showRecap(r){
+    els.recapSaleId.textContent = r.saleId;
+    els.recapSellers.textContent = r.sellerLabels.join(', ');
+    els.recapCustomer.textContent = r.customerName;
+    els.recapPhone.textContent = r.customerPhone;
+    els.recapEmail.textContent = r.customerEmail || '—';
+    els.recapCity.textContent = r.customerCity;
+    els.recapAddress.textContent = r.customerAddress;
+    els.recapOrder.textContent = r.orderNumber;
+    els.recapPayment.textContent = r.paymentMethod;
+    els.recapService.textContent = r.serviceName;
+
+    els.recapItems.innerHTML = '';
+    r.items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'recap-item-row';
+      row.innerHTML = `
+        <span class="name">${escapeHtml(item.itemName)} × ${item.qty}</span>
+        <span>${formatMAD(item.unitPrice * item.qty)}</span>
+      `;
+      els.recapItems.appendChild(row);
+    });
+
+    els.recapFee.textContent = formatMAD(r.serviceFee);
+    els.recapVolume.textContent = formatM3(r.totalVolume);
+    els.recapTotal.textContent = formatMAD(r.totalAmount + r.serviceFee);
+
+    els.recapModal.classList.add('show');
+  }
+
+  function hideRecap(){
+    els.recapModal.classList.remove('show');
+  }
+
+  els.recapCloseBtn.addEventListener('click', hideRecap);
+
+  els.itemSearch.addEventListener('input', debounceSearch);
+  els.form.addEventListener('submit', handleSubmit);
+
+  renderCart();
+  loadConfig();
+</script>
+
+</body>
+</html>
