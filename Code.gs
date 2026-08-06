@@ -75,112 +75,145 @@ function jsonOutput(obj) {
 }
 
 // ---------- CONFIG ----------
+//
+// PERFORMANCE NOTE: this used to make 6 separate getColumn() calls, each of
+// which issues its own getRange(...).getValues() round-trip covering the
+// sheet's *entire* lastRow. If the Config tab's real data is small (a few
+// dozen sellers/cities/services) but lastRow reports something like 38,000
+// (very common — leftover formatting, a stray value, or a formula that once
+// spilled down the sheet all push lastRow up even though the visible rows
+// are empty), every one of those 6 calls pays the cost of a huge, mostly
+// empty read. That was the actual bottleneck, not the small amount of real
+// data.
+//
+// Fix #1 (this file): do ONE batched getRange(...).getValues() covering all
+// the columns we need, instead of 6 separate calls. One large read is far
+// cheaper than several.
+// Fix #2 (this file): cache the parsed result for CACHE_TTL_SECONDS so
+// repeat page loads/sale submissions don't hit the sheet at all.
+// Fix #3 (you, in the Sheet): Config data changes rarely and should never
+// need 38k rows. Select the row numbers below your real last row of data and
+// "Delete rows" (not just clear content — clearing content does NOT lower
+// lastRow, deleting rows does). That alone fixes the root cause.
+
+var CACHE_KEY_CONFIG = 'config_v2';
+var CACHE_TTL_SECONDS = 300; // 5 minutes — bump this up if Config changes rarely
 
 function getConfig() {
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get(CACHE_KEY_CONFIG);
+  if (cached) return JSON.parse(cached);
+
+  var result = buildConfig();
+  try {
+    cache.put(CACHE_KEY_CONFIG, JSON.stringify(result), CACHE_TTL_SECONDS);
+  } catch (e) {
+    // CacheService caps values at 100KB. If the Config sheet is still
+    // carrying a lot of stray rows the JSON can exceed that — caching is a
+    // nice-to-have, so just skip it rather than fail the whole request.
+  }
+  return result;
+}
+
+function buildConfig() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONFIG);
   var lastRow = sheet.getLastRow();
-
-  var sellerIds = getColumn(sheet, 1, lastRow);
-  var sellerNames = getColumn(sheet, 2, lastRow);
-  var paymentMethods = getColumn(sheet, 3, lastRow);
-  var serviceNames = getColumn(sheet, 4, lastRow);
-  var serviceCodes = getColumn(sheet, 5, lastRow);
-  var cityNames = getColumn(sheet, 7, lastRow);
-
-  var sellers = [];
-  for (var i = 0; i < sellerIds.length; i++) {
-    if (sellerIds[i] === '') continue;
-    sellers.push({ id: sellerIds[i], name: sellerNames[i] || '' });
-  }
-
-  var services = [];
-  for (var s = 0; s < serviceNames.length; s++) {
-    if (serviceNames[s] === '') continue;
-    services.push({ name: serviceNames[s], code: serviceCodes[s] || '' });
-  }
-
-  // Pricing grid: city names in col G, prices in H:M, header codes in row 1 (H1:M1).
-  // H1/I1 are always "Delivery1"/"Delivery2" — see getServiceFeeForSale() for how
-  // those two are applied.
-  var pricingHeaders = sheet.getRange(1, 8, 1, 6).getValues()[0].map(function (v) {
+  var headerRow = sheet.getRange(1, 8, 1, 6).getValues()[0].map(function (v) {
     return String(v).trim();
   });
 
+  if (lastRow < 2) {
+    return { sellers: [], paymentMethods: [], services: [], cities: [], pricingHeaders: headerRow };
+  }
+
+  // Single batched read of columns A..M instead of 8 separate range reads.
+  var data = sheet.getRange(2, 1, lastRow - 1, 13).getValues();
+
+  var sellers = [];
+  var paymentMethods = [];
+  var seenPayment = {};
+  var services = [];
   var cities = [];
-  if (lastRow >= 2) {
-    var priceGrid = sheet.getRange(2, 8, lastRow - 1, 6).getValues();
-    for (var c = 0; c < cityNames.length; c++) {
-      if (cityNames[c] === '') continue;
+
+  for (var r = 0; r < data.length; r++) {
+    var row = data[r];
+
+    var sellerId = cleanStr(row[0]);
+    if (sellerId !== '') sellers.push({ id: sellerId, name: cleanStr(row[1]) });
+
+    var pay = cleanStr(row[2]);
+    if (pay !== '' && !seenPayment[pay]) {
+      seenPayment[pay] = true;
+      paymentMethods.push(pay);
+    }
+
+    var serviceName = cleanStr(row[3]);
+    if (serviceName !== '') services.push({ name: serviceName, code: cleanStr(row[4]) });
+
+    var cityName = cleanStr(row[6]);
+    if (cityName !== '') {
       var prices = {};
-      for (var h = 0; h < pricingHeaders.length; h++) {
-        prices[pricingHeaders[h]] = Number(priceGrid[c][h]) || 0;
+      for (var h = 0; h < headerRow.length; h++) {
+        prices[headerRow[h]] = Number(row[7 + h]) || 0;
       }
-      cities.push({ name: cityNames[c], prices: prices });
+      cities.push({ name: cityName, prices: prices });
     }
   }
 
   return {
     sellers: sellers,
-    paymentMethods: paymentMethods.filter(function (v) { return v !== ''; }),
+    paymentMethods: paymentMethods,
     services: services,
     cities: cities,
-    pricingHeaders: pricingHeaders
+    pricingHeaders: headerRow
   };
 }
 
+function cleanStr(v) {
+  return (v === null || v === undefined) ? '' : String(v).trim();
+}
+
 // ---------- SERVICE FEE (city + service, Delivery1/Delivery2 split by basket volume) ----------
+//
+// This used to re-scan the Config sheet from scratch (3 more getColumn() calls
+// plus a row lookup) on every single sale. It now reuses getConfig(), which is
+// cached, so a sale submission does zero extra Config-sheet reads in the
+// common case.
 
 function getServiceFeeForSale(serviceName, cityName, totalVolume) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONFIG);
-  var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return 0;
+  var config = getConfig();
 
-  // Look up the mapping code for the chosen service (col D -> col E).
-  var serviceNames = getColumn(sheet, 4, lastRow);
-  var serviceCodes = getColumn(sheet, 5, lastRow);
-  var code = '';
-  for (var i = 0; i < serviceNames.length; i++) {
-    if (serviceNames[i] === serviceName) { code = serviceCodes[i]; break; }
+  var service = null;
+  for (var i = 0; i < config.services.length; i++) {
+    if (config.services[i].name === serviceName) { service = config.services[i]; break; }
   }
-  code = (code || '').trim().toLowerCase();
+  if (!service) return 0;
+  var code = (service.code || '').trim().toLowerCase();
   if (!code) return 0;
 
-  // Find the pricing row for the chosen city (col G).
-  var cityNames = getColumn(sheet, 7, lastRow);
-  var cityRowOffset = -1;
-  for (var j = 0; j < cityNames.length; j++) {
-    if (cityNames[j] === cityName) { cityRowOffset = j; break; }
+  var city = null;
+  for (var j = 0; j < config.cities.length; j++) {
+    if (config.cities[j].name === cityName) { city = config.cities[j]; break; }
   }
-  if (cityRowOffset === -1) return 0;
+  if (!city) return 0;
 
-  var headerRow = sheet.getRange(1, 8, 1, 6).getValues()[0].map(function (v) {
-    return String(v).trim();
-  });
-  var priceRow = sheet.getRange(2 + cityRowOffset, 8, 1, 6).getValues()[0];
+  var headers = config.pricingHeaders;
 
   // "Delivery"/"Livraison" is special-cased by basket volume rather than matched
   // by name: index 0 = Delivery1 (H), index 1 = Delivery2 (I).
   if (code === 'delivery' || code === 'livraison') {
-    var idx = (Number(totalVolume) > 0.250) ? 0 : 1; // >0.250 m3 -> Delivery1, else Parcel -> Delivery2
-    return Number(priceRow[idx]) || 0;
+    var header = (Number(totalVolume) > 0.250) ? headers[0] : headers[1]; // >0.250 m3 -> Delivery1, else Parcel -> Delivery2
+    return Number(city.prices[header]) || 0;
   }
 
   // Every other service is matched by comparing its code to the header text,
   // skipping the first two columns reserved for Delivery1/Delivery2.
-  for (var k = 2; k < headerRow.length; k++) {
-    if (headerRow[k].toLowerCase() === code) {
-      return Number(priceRow[k]) || 0;
+  for (var k = 2; k < headers.length; k++) {
+    if ((headers[k] || '').toLowerCase() === code) {
+      return Number(city.prices[headers[k]]) || 0;
     }
   }
   return 0;
-}
-
-function getColumn(sheet, colIndex, lastRow) {
-  if (lastRow < 2) return [];
-  var values = sheet.getRange(2, colIndex, lastRow - 1, 1).getValues();
-  return values.map(function (r) {
-    return (r[0] === null || r[0] === undefined) ? '' : String(r[0]).trim();
-  });
 }
 
 // ---------- CATALOG SEARCH ----------
