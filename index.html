@@ -444,6 +444,42 @@
     color:var(--ikea-blue-dark);
   }
 
+  /* --- page loader: shown while initial config (sellers/cities/services) loads --- */
+  .page-loader{
+    position:fixed;
+    inset:0;
+    background:var(--bg);
+    z-index:300;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    padding:24px;
+    text-align:center;
+  }
+  .page-loader.hide{ display:none; }
+  .page-loader p{
+    margin:0;
+    font-size:14px;
+    font-weight:700;
+    color:var(--ikea-blue-dark);
+  }
+  .page-loader .retry-btn{
+    display:none;
+    background:var(--ikea-blue);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:10px 20px;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .page-loader.error .ring-spinner{ display:none; }
+  .page-loader.error .retry-btn{ display:inline-block; }
+  .page-loader.error p{ color:var(--err); }
+
   /* --- recap modal (shown after a successful submit) --- */
   .modal-overlay{
     display:none;
@@ -546,6 +582,12 @@
 </style>
 </head>
 <body>
+
+<div class="page-loader" id="pageLoader">
+  <div class="ring-spinner"></div>
+  <p id="pageLoaderText">Chargement de la configuration…</p>
+  <button type="button" class="retry-btn" id="pageLoaderRetry">Réessayer</button>
+</div>
 
 <header class="topbar">
   <div class="inner">
@@ -713,7 +755,7 @@
 
 <div class="bottom-bar">
   <div class="inner">
-    <button type="submit" form="saleForm" class="submit-btn" id="submitBtn">Valider la vente</button>
+    <button type="submit" form="saleForm" class="submit-btn" id="submitBtn" disabled>Valider la vente</button>
   </div>
 </div>
 
@@ -790,6 +832,9 @@
     serviceFeeServiceLabel: document.getElementById('serviceFeeServiceLabel'),
     submitBtn: document.getElementById('submitBtn'),
     submitOverlay: document.getElementById('submitOverlay'),
+    pageLoader: document.getElementById('pageLoader'),
+    pageLoaderText: document.getElementById('pageLoaderText'),
+    pageLoaderRetry: document.getElementById('pageLoaderRetry'),
     recapModal: document.getElementById('recapModal'),
     recapCloseBtn: document.getElementById('recapCloseBtn'),
     recapSaleId: document.getElementById('recapSaleId'),
@@ -844,9 +889,16 @@
   }
 
   async function loadConfig(){
+    els.pageLoader.classList.remove('error', 'hide');
+    els.pageLoaderText.textContent = 'Chargement de la configuration…';
+    els.submitBtn.disabled = true;
+
     try{
       const res = await fetch(`${SCRIPT_URL}?action=config`);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
       allSellers = data.sellers || [];
       citiesData = data.cities || [];
       servicesData = data.services || [];
@@ -866,10 +918,18 @@
         citiesData.map(c => ({ value: c.name, label: c.name })),
         'Sélectionner une ville'
       );
+
+      els.pageLoader.classList.add('hide');
+      els.submitBtn.disabled = false;
     }catch(err){
-      showBanner("Impossible de charger la configuration. Vérifiez la connexion et réessayez.", 'err');
+      // Keep the full-page loader up but swap the ring for a retry button —
+      // better than dumping the user into a form with empty dropdowns.
+      els.pageLoaderText.textContent = "Impossible de charger la configuration. Vérifiez votre connexion et réessayez.";
+      els.pageLoader.classList.add('error');
     }
   }
+
+  els.pageLoaderRetry.addEventListener('click', loadConfig);
 
   // ---- Service fee (city + service, with the Delivery1/Delivery2 split by basket volume) ----
 
